@@ -10,12 +10,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Corrigido
 
 #### 1. **Bug Crítico: Scanning com core.Model Embedded**
+
 - **Problema:** Ao fazer scan de resultados SQL para structs com `core.Model` embedded, ocorria erro pois o código tentava escanear para o campo embedded inteiro ao invés dos campos individuais (ID, CreatedAt, UpdatedAt)
 - **Solução:** Implementado sistema de `fieldPath` em `query/scanner.go` que navega corretamente através de structs embedded usando um caminho de índices
 - **Impacto:** Agora todas as queries com modelos que usam `core.Model` funcionam corretamente
 - **Arquivo:** `query/scanner.go`
 
 #### 2. **Bug: AutoMigrate com SQLite (Sintaxe MySQL Incorreta)**
+
 - **Problema:** `migrate.AutoMigrate()` gerava SQL com sintaxe `AUTO_INCREMENT` do MySQL, que SQLite não suporta
 - **Solução:** Implementado detecção de dialeto baseada em `Placeholder()` e `QuoteIdentifier()`:
   - PostgreSQL: usa `SERIAL`
@@ -25,6 +27,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Arquivo:** `migrate/auto.go`
 
 #### 3. **Bug: createMigrationsTable Usando Tipos Genéricos**
+
 - **Problema:** Tabela de migrations usava tipos genéricos (VARCHAR, TIMESTAMP) que podem não funcionar em todos os dialetos
 - **Solução:** Implementado detecção de dialeto e uso de tipos específicos:
   - PostgreSQL: `BIGINT`, `VARCHAR(255)`, `TIMESTAMP`
@@ -36,16 +39,19 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Adicionado
 
 #### 1. **core.ErrValidation**
+
 - Adicionado erro `ErrValidation` que estava faltando e era usado nos exemplos
 - **Arquivo:** `core/interfaces.go`
 
 #### 2. **Float64Field**
+
 - Adicionado tipo `Float64Field` para campos float64 não-nullable
 - Já existia `OptionalFloat64Field` mas faltava a versão não-opcional
 - Suporta todos os operadores: Eq, Ne, Gt, Gte, Lt, Lte, In, NotIn, Between, IsNull, IsNotNull
 - **Arquivo:** `query/field.go`
 
 #### 3. **Dependências SQL Drivers**
+
 - Adicionadas dependências dos drivers SQL oficiais:
   - `github.com/lib/pq` (PostgreSQL)
   - `github.com/go-sql-driver/mysql` (MySQL)
@@ -55,12 +61,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Corrigido - Exemplos
 
 #### 1. **Atualizados Exemplos para API Correta**
+
 - Corrigido uso de `genus.New()` para `genus.NewWithLogger()`
 - Corrigido chamadas de CRUD: `g.Create()` → `g.DB().Create()`
 - Corrigido Table builder: `g.Table[T]()` → `genus.Table[T](g)`
 - **Arquivos:** `examples/optional/main.go`, `examples/migrations/main.go`, `examples/multi-database/main.go`
 
 #### 2. **Corrigidos fmt.Println com Newlines Redundantes**
+
 - Substituído `fmt.Println("text\n")` por `fmt.Println("text")` seguido de `fmt.Println()`
 - Corrige warning do linter: "fmt.Println arg list ends with redundant newline"
 - **Arquivos:** Todos os exemplos
@@ -74,6 +82,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 **Motivação:** Resolver a dor da manipulação de `sql.Null*` e ponteiros em JSON com uma API limpa e unificada.
 
 **Funcionalidades:**
+
 - Tipo genérico `core.Optional[T]` para valores nullable
 - Suporte completo a JSON marshaling/unmarshaling (serializa como `null` quando vazio)
 - Implementa `sql.Scanner` e `driver.Valuer` para integração com database/sql
@@ -83,6 +92,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Conversões automáticas para tipos primitivos (string, int, int64, bool, float64)
 
 **Exemplo:**
+
 ```go
 type User struct {
     core.Model
@@ -103,6 +113,7 @@ userAge := age.GetOrDefault(18)
 ```
 
 **Arquivos:**
+
 - `core/optional.go` - Implementação completa do tipo Optional[T]
 
 **Supera:** Todos os ORMs Go existentes - primeira implementação completa de Optional[T] genérico para Go
@@ -114,6 +125,7 @@ userAge := age.GetOrDefault(18)
 **Motivação:** Permitir queries type-safe em campos nullable.
 
 **Funcionalidades:**
+
 - `OptionalStringField` - Campo string opcional
 - `OptionalIntField` - Campo int opcional
 - `OptionalInt64Field` - Campo int64 opcional
@@ -122,6 +134,7 @@ userAge := age.GetOrDefault(18)
 - Todos os campos suportam operadores apropriados (`Eq`, `Ne`, `Gt`, `Like`, `IsNull`, `IsNotNull`, etc.)
 
 **Exemplo:**
+
 ```go
 var UserFields = struct {
     Name  query.StringField
@@ -141,6 +154,7 @@ users, _ := genus.Table[User]().
 ```
 
 **Arquivos:**
+
 - `query/field.go` - Adicionados campos opcionais (linhas 362-794)
 
 **Supera:** GORM, Squirrel - campos opcionais totalmente tipados
@@ -152,12 +166,14 @@ users, _ := genus.Table[User]().
 **Motivação:** Permitir composição segura de queries dinâmicas sem efeitos colaterais.
 
 **Funcionalidades:**
+
 - Todos os métodos do Builder retornam uma nova instância
 - Método `clone()` interno para cópia profunda do estado
 - Thread-safe por design
 - Permite reutilização de queries base sem mutação
 
 **Exemplo:**
+
 ```go
 // Base query não é modificada
 baseQuery := genus.Table[User]().Where(UserFields.Active.Eq(true))
@@ -171,10 +187,12 @@ minors := baseQuery.Where(UserFields.Age.Lt(18))
 ```
 
 **Impacto:**
+
 - Antes: `baseQuery.Where()` modificava o objeto original
 - Depois: `baseQuery.Where()` retorna uma nova query, original intocado
 
 **Arquivos:**
+
 - `query/builder.go` - Adicionado método `clone()` e modificados todos os métodos de building (linhas 42-132)
 
 **Supera:** Squirrel - composição type-safe e imutável
@@ -186,6 +204,7 @@ minors := baseQuery.Where(UserFields.Age.Lt(18))
 **Motivação:** Eliminar boilerplate manual e garantir sincronização automática entre structs e campos tipados.
 
 **Funcionalidades:**
+
 - CLI completo com comandos `generate`, `version`, `help`
 - Parser de AST Go para extrair structs e tags `db`
 - Geração automática de arquivos `*_fields.gen.go`
@@ -194,6 +213,7 @@ minors := baseQuery.Where(UserFields.Age.Lt(18))
 - Flags: `-o` (output dir), `-p` (package name), `-h` (help)
 
 **Uso:**
+
 ```bash
 # Instalar
 go install github.com/GabrielOnRails/genus/cmd/genus@latest
@@ -206,6 +226,7 @@ genus generate -o ./generated -p mypackage ./models
 ```
 
 **Entrada (struct):**
+
 ```go
 type User struct {
     core.Model
@@ -216,6 +237,7 @@ type User struct {
 ```
 
 **Saída (gerada automaticamente):**
+
 ```go
 // user_fields.gen.go
 var UserFields = struct {
@@ -232,6 +254,7 @@ var UserFields = struct {
 ```
 
 **Arquivos:**
+
 - `cmd/genus/main.go` - CLI principal com comandos
 - `codegen/generator.go` - Lógica de geração (parser AST, extração de structs, mapeamento de tipos)
 - `codegen/template.go` - Template de código gerado
@@ -243,17 +266,20 @@ var UserFields = struct {
 ### Mudanças Técnicas
 
 #### Performance
+
 - **Zero reflection em queries:** Campos tipados gerados eliminam necessidade de reflection para descobrir metadados de coluna
 - **Builder imutável:** Clone otimizado com cópia profunda apenas de slices necessários
 - **Optional[T]:** Implementação eficiente com conversões diretas para tipos primitivos
 
 #### Arquitetura
+
 - Novo pacote `codegen` para geração de código
 - Novo pacote `cmd/genus` para CLI
 - Expansão de `core` com tipo `Optional[T]`
 - Expansão de `query` com campos opcionais
 
 #### Compatibilidade
+
 - **Breaking change:** Query builder agora é imutável
   - Migração: Nenhuma mudança necessária no código do usuário (API permanece a mesma)
   - Impacto: Queries agora são thread-safe e podem ser reutilizadas
@@ -263,11 +289,13 @@ var UserFields = struct {
 ### Exemplos e Documentação
 
 #### Novos Exemplos
+
 - `examples/optional/main.go` - Demonstração completa de Optional[T]
 - `examples/codegen/models/user.go` - Modelos para code generation
 - `examples/codegen/README.md` - Tutorial de code generation
 
 #### Documentação Atualizada
+
 - `README.md` - Adicionadas seções sobre Optional[T], Code Generation e Query Builder Imutável
 - `README.md` - Tabela de comparação expandida (GORM, Ent, sqlboiler, Squirrel)
 - `examples/codegen/README.md` - Guia completo de uso do CLI
@@ -291,6 +319,7 @@ var UserFields = struct {
 ### Adicionado - Versão Inicial
 
 #### Core Features
+
 - Query builder genérico com suporte a Go Generics
 - Campos tipados (StringField, IntField, Int64Field, BoolField)
 - Operadores type-safe (Eq, Ne, Gt, Like, etc.)
@@ -304,11 +333,13 @@ var UserFields = struct {
 - Direct slice returns (`[]T`)
 
 #### Packages
+
 - `core` - Tipos base, DB, Logger, Interfaces
 - `query` - Query builder, Fields, Conditions
 - `dialects/postgres` - PostgreSQL dialect
 
 #### Examples
+
 - `examples/basic` - Exemplo completo de todas as features
 - `examples/logging` - Configuração de logging customizado
 - `examples/testing` - Padrões de teste
@@ -320,15 +351,18 @@ var UserFields = struct {
 ### [2.0.0] - Planejado
 
 #### Relational Features
+
 - HasMany, BelongsTo, ManyToMany relationships
 - Eager loading / Preloading
 - Join support
 
 #### Database Support
+
 - MySQL dialect
 - SQLite dialect
 
 #### Advanced Features
+
 - Migrations automáticas
 - Soft deletes
 - Advanced hooks (AfterCreate, BeforeUpdate, etc.)
