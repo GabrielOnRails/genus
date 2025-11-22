@@ -39,41 +39,96 @@ func NewBuilder[T any](executor core.Executor, dialect core.Dialect, logger core
 	}
 }
 
+// clone cria uma cópia profunda do builder para garantir imutabilidade.
+// Cada método que modifica o estado retorna um novo builder.
+func (b *Builder[T]) clone() *Builder[T] {
+	newBuilder := &Builder[T]{
+		executor:  b.executor,
+		dialect:   b.dialect,
+		logger:    b.logger,
+		tableName: b.tableName,
+	}
+
+	// Copiar conditions
+	if len(b.conditions) > 0 {
+		newBuilder.conditions = make([]interface{}, len(b.conditions))
+		copy(newBuilder.conditions, b.conditions)
+	}
+
+	// Copiar orderBy
+	if len(b.orderBy) > 0 {
+		newBuilder.orderBy = make([]OrderBy, len(b.orderBy))
+		copy(newBuilder.orderBy, b.orderBy)
+	}
+
+	// Copiar limit
+	if b.limit != nil {
+		limitVal := *b.limit
+		newBuilder.limit = &limitVal
+	}
+
+	// Copiar offset
+	if b.offset != nil {
+		offsetVal := *b.offset
+		newBuilder.offset = &offsetVal
+	}
+
+	// Copiar selectCols
+	if len(b.selectCols) > 0 {
+		newBuilder.selectCols = make([]string, len(b.selectCols))
+		copy(newBuilder.selectCols, b.selectCols)
+	}
+
+	return newBuilder
+}
+
 // Where adiciona uma condição WHERE.
 // Aceita Condition ou ConditionGroup.
+// IMUTÁVEL: Retorna um novo builder sem modificar o original.
 func (b *Builder[T]) Where(condition interface{}) *Builder[T] {
-	b.conditions = append(b.conditions, condition)
-	return b
+	newBuilder := b.clone()
+	newBuilder.conditions = append(newBuilder.conditions, condition)
+	return newBuilder
 }
 
 // OrderByAsc adiciona ORDER BY ASC.
+// IMUTÁVEL: Retorna um novo builder sem modificar o original.
 func (b *Builder[T]) OrderByAsc(column string) *Builder[T] {
-	b.orderBy = append(b.orderBy, OrderBy{Column: column, Desc: false})
-	return b
+	newBuilder := b.clone()
+	newBuilder.orderBy = append(newBuilder.orderBy, OrderBy{Column: column, Desc: false})
+	return newBuilder
 }
 
 // OrderByDesc adiciona ORDER BY DESC.
+// IMUTÁVEL: Retorna um novo builder sem modificar o original.
 func (b *Builder[T]) OrderByDesc(column string) *Builder[T] {
-	b.orderBy = append(b.orderBy, OrderBy{Column: column, Desc: true})
-	return b
+	newBuilder := b.clone()
+	newBuilder.orderBy = append(newBuilder.orderBy, OrderBy{Column: column, Desc: true})
+	return newBuilder
 }
 
 // Limit define o LIMIT.
+// IMUTÁVEL: Retorna um novo builder sem modificar o original.
 func (b *Builder[T]) Limit(limit int) *Builder[T] {
-	b.limit = &limit
-	return b
+	newBuilder := b.clone()
+	newBuilder.limit = &limit
+	return newBuilder
 }
 
 // Offset define o OFFSET.
+// IMUTÁVEL: Retorna um novo builder sem modificar o original.
 func (b *Builder[T]) Offset(offset int) *Builder[T] {
-	b.offset = &offset
-	return b
+	newBuilder := b.clone()
+	newBuilder.offset = &offset
+	return newBuilder
 }
 
 // Select define as colunas a serem selecionadas.
+// IMUTÁVEL: Retorna um novo builder sem modificar o original.
 func (b *Builder[T]) Select(columns ...string) *Builder[T] {
-	b.selectCols = columns
-	return b
+	newBuilder := b.clone()
+	newBuilder.selectCols = columns
+	return newBuilder
 }
 
 // Find executa a query e retorna um slice de T.
@@ -109,9 +164,11 @@ func (b *Builder[T]) Find(ctx context.Context) ([]T, error) {
 }
 
 // First retorna o primeiro resultado ou erro se não encontrado.
+// IMUTÁVEL: Cria uma cópia do builder com LIMIT 1.
 func (b *Builder[T]) First(ctx context.Context) (T, error) {
-	b.Limit(1)
-	results, err := b.Find(ctx)
+	// Cria um novo builder com limit 1 sem modificar o original
+	limitedBuilder := b.Limit(1)
+	results, err := limitedBuilder.Find(ctx)
 
 	var zero T
 	if err != nil {
