@@ -80,14 +80,14 @@ func (r *UserRepository) Delete(ctx context.Context, user *User) error {
 
 // setupTestDB cria um banco de dados de teste em memória (SQLite)
 // Nota: Para usar SQLite, você precisaria implementar o dialeto SQLite
-func setupTestDB(t *testing.T) (*genus.Genus, func()) {
+func setupTestDB() (*genus.Genus, func()) {
 	// Este é um exemplo. Em produção, você usaria um banco de teste real
 	// ou um mock do Executor interface
 
 	// Exemplo com PostgreSQL de teste:
 	// db, err := sql.Open("postgres", "postgresql://test:test@localhost/test_db")
 	// if err != nil {
-	//     t.Fatalf("Failed to open test database: %v", err)
+	//     log.Fatalf("Failed to open test database: %v", err)
 	// }
 
 	// Para este exemplo, vamos criar um stub
@@ -135,7 +135,7 @@ func TestUserRepository_Create(t *testing.T) {
 
 	t.Skip("Exemplo conceitual - requer banco de dados de teste configurado")
 
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestDB()
 	defer cleanup()
 
 	repo := NewUserRepository(db)
@@ -162,7 +162,7 @@ func TestUserRepository_Create(t *testing.T) {
 func TestUserRepository_FindByEmail(t *testing.T) {
 	t.Skip("Exemplo conceitual - requer banco de dados de teste configurado")
 
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestDB()
 	defer cleanup()
 
 	repo := NewUserRepository(db)
@@ -198,7 +198,7 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 func TestUserRepository_FindActive(t *testing.T) {
 	t.Skip("Exemplo conceitual - requer banco de dados de teste configurado")
 
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestDB()
 	defer cleanup()
 
 	repo := NewUserRepository(db)
@@ -238,7 +238,7 @@ func TestUserRepository_FindActive(t *testing.T) {
 func TestUserRepository_Transaction(t *testing.T) {
 	t.Skip("Exemplo conceitual - requer banco de dados de teste configurado")
 
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestDB()
 	defer cleanup()
 
 	repo := NewUserRepository(db)
@@ -302,7 +302,7 @@ func TestUserRepository_Transaction(t *testing.T) {
 func BenchmarkUserRepository_FindActive(b *testing.B) {
 	b.Skip("Exemplo conceitual - requer banco de dados de teste configurado")
 
-	db, cleanup := setupTestDB(&testing.T{})
+	db, cleanup := setupTestDB()
 	defer cleanup()
 
 	repo := NewUserRepository(db)
