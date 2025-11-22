@@ -284,6 +284,26 @@ func Table[T any](g *Genus) *query.Builder[T] {
 
 Veja `examples/basic/main.go` para um exemplo completo com todos os recursos.
 
+## Desenvolvimento
+
+### Setup Inicial
+
+Após clonar o repositório, execute o script de setup para configurar os git hooks:
+
+```bash
+./scripts/setup-hooks.sh
+```
+
+Este script instala hooks que validam mensagens de commit, garantindo consistência no histórico do projeto.
+
+### Git Hooks
+
+O projeto utiliza os seguintes hooks:
+
+- **commit-msg**: Valida mensagens de commit, bloqueando referências a ferramentas de IA externas
+
+Para reinstalar os hooks: `./scripts/setup-hooks.sh`
+
 ## Licença
 
 MIT
@@ -291,3 +311,11 @@ MIT
 ## Contribuindo
 
 Contribuições são bem-vindas! Por favor, abra uma issue ou PR.
+
+### Processo de Contribuição
+
+1. Clone o repositório
+2. Execute `./scripts/setup-hooks.sh` para configurar os hooks
+3. Crie uma branch para sua feature: `git checkout -b feature/minha-feature`
+4. Faça suas mudanças e commits (os hooks validarão automaticamente)
+5. Abra um Pull Request
