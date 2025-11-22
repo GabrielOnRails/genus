@@ -131,19 +131,21 @@ func buildColumnDefinition(field reflect.StructField, dialect core.Dialect) stri
 		constraints = append(constraints, "PRIMARY KEY")
 
 		// Auto-increment dependendo do dialect
-		// Nota: isso é simplificado - em produção seria mais complexo
-		switch dialect.(type) {
-		case interface{ Placeholder(int) string }:
-			// Detectar dialect pelo método Placeholder
-			placeholder := dialect.Placeholder(1)
-			if strings.HasPrefix(placeholder, "$") {
-				// PostgreSQL
-				sqlType = "SERIAL"
-			} else {
-				// MySQL ou SQLite
-				sqlType = "INTEGER"
-				constraints = append(constraints, "AUTO_INCREMENT")
-			}
+		placeholder := dialect.Placeholder(1)
+		quotedIdentifier := dialect.QuoteIdentifier("test")
+
+		if strings.HasPrefix(placeholder, "$") {
+			// PostgreSQL usa $1, $2, etc
+			sqlType = "SERIAL"
+		} else if strings.HasPrefix(quotedIdentifier, "`") {
+			// MySQL usa backticks `
+			sqlType = "INTEGER"
+			constraints = append(constraints, "AUTO_INCREMENT")
+		} else {
+			// SQLite usa aspas duplas "
+			// SQLite: INTEGER PRIMARY KEY é automaticamente AUTOINCREMENT
+			sqlType = "INTEGER"
+			// Não adiciona AUTO_INCREMENT pois SQLite não suporta
 		}
 	}
 

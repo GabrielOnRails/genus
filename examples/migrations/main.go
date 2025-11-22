@@ -49,7 +49,8 @@ var UserFields = struct {
 }
 
 func main() {
-	fmt.Println("=== Genus Migrations Example ===\n")
+	fmt.Println("=== Genus Migrations Example ===")
+	fmt.Println()
 
 	ctx := context.Background()
 
@@ -81,10 +82,11 @@ func main() {
 		log.Fatalf("AutoMigrate failed: %v", err)
 	}
 
-	fmt.Println("   ✅ Tables created successfully!\n")
+	fmt.Println("   ✅ Tables created successfully!")
+	fmt.Println()
 
 	// Testar inserção
-	g := genus.New(db, dialect, logger)
+	g := genus.NewWithLogger(db, dialect, logger)
 
 	user := &User{
 		Name:     "Alice",
@@ -93,7 +95,7 @@ func main() {
 		IsActive: true,
 	}
 
-	if err := g.Create(ctx, user); err != nil {
+	if err := g.DB().Create(ctx, user); err != nil {
 		log.Fatalf("Create failed: %v", err)
 	}
 

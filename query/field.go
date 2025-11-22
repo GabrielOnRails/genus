@@ -359,6 +359,105 @@ func (f BoolField) NotIn(values ...bool) Condition {
 	}
 }
 
+// Float64Field representa um campo float64.
+type Float64Field struct {
+	column string
+}
+
+func NewFloat64Field(column string) Float64Field {
+	return Float64Field{column: column}
+}
+
+func (f Float64Field) ColumnName() string {
+	return f.column
+}
+
+func (f Float64Field) Eq(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpEq,
+		Value:    value,
+	}
+}
+
+func (f Float64Field) Ne(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNe,
+		Value:    value,
+	}
+}
+
+func (f Float64Field) Gt(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGt,
+		Value:    value,
+	}
+}
+
+func (f Float64Field) Gte(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGte,
+		Value:    value,
+	}
+}
+
+func (f Float64Field) Lt(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLt,
+		Value:    value,
+	}
+}
+
+func (f Float64Field) Lte(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLte,
+		Value:    value,
+	}
+}
+
+func (f Float64Field) In(values ...float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIn,
+		Value:    values,
+	}
+}
+
+func (f Float64Field) NotIn(values ...float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotIn,
+		Value:    values,
+	}
+}
+
+func (f Float64Field) Between(start, end float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpBetween,
+		Value:    []float64{start, end},
+	}
+}
+
+func (f Float64Field) IsNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNull,
+	}
+}
+
+func (f Float64Field) IsNotNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNotNull,
+	}
+}
+
 // --- Campos Opcionais para suporte a NULL ---
 
 // OptionalStringField representa um campo string que pode ser NULL.

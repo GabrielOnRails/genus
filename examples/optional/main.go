@@ -10,6 +10,7 @@ import (
 
 	"github.com/GabrielOnRails/genus"
 	"github.com/GabrielOnRails/genus/core"
+	"github.com/GabrielOnRails/genus/dialects/postgres"
 	"github.com/GabrielOnRails/genus/query"
 	_ "github.com/lib/pq"
 )
@@ -55,7 +56,8 @@ var ProductFields = struct {
 }
 
 func main() {
-	fmt.Println("=== Genus Optional[T] Example ===\n")
+	fmt.Println("=== Genus Optional[T] Example ===")
+	fmt.Println()
 
 	// 1. Demonstração de criação de Optional
 	fmt.Println("1. Criando valores Optional:")
@@ -143,14 +145,14 @@ func main() {
 	}
 	defer db.Close()
 
-	g := genus.NewWithLogger(db, db, core.NewDefaultLogger(true))
+	g := genus.NewWithLogger(db, postgres.New(), core.NewDefaultLogger(true))
 
 	// Criar tabela
 	createTable(db)
 
 	// Inserir produto
 	fmt.Println("\n   Inserindo produto...")
-	if err := g.Create(context.Background(), &product); err != nil {
+	if err := g.DB().Create(context.Background(), &product); err != nil {
 		log.Printf("   Error creating product: %v", err)
 		return
 	}
@@ -158,7 +160,7 @@ func main() {
 
 	// Buscar produtos com desconto
 	fmt.Println("\n   Buscando produtos com desconto...")
-	productsWithDiscount, err := g.Table[Product]().
+	productsWithDiscount, err := genus.Table[Product](g).
 		Where(ProductFields.Discount.IsNotNull()).
 		Find(context.Background())
 
@@ -170,7 +172,7 @@ func main() {
 
 	// Buscar produtos sem descrição
 	fmt.Println("\n   Buscando produtos sem descrição...")
-	productsWithoutDesc, err := g.Table[Product]().
+	productsWithoutDesc, err := genus.Table[Product](g).
 		Where(ProductFields.Description.IsNull()).
 		Find(context.Background())
 
@@ -183,7 +185,7 @@ func main() {
 	// Atualizar produto
 	fmt.Println("\n   Atualizando produto com desconto...")
 	product.Discount = core.Some(15.5)
-	if err := g.Update(context.Background(), &product); err != nil {
+	if err := g.DB().Update(context.Background(), &product); err != nil {
 		log.Printf("   Error updating product: %v", err)
 		return
 	}
@@ -191,7 +193,7 @@ func main() {
 
 	// Buscar produto atualizado
 	fmt.Println("\n   Buscando produto atualizado...")
-	updated, err := g.Table[Product]().
+	updated, err := genus.Table[Product](g).
 		Where(ProductFields.ID.Eq(product.ID)).
 		First(context.Background())
 

@@ -49,7 +49,8 @@ func main() {
 		log.Fatalf("Failed to connect: %v", err)
 	}
 
-	fmt.Println("=== Genus ORM - Type-Safe Demo ===\n")
+	fmt.Println("=== Genus ORM - Type-Safe Demo ===")
+	fmt.Println()
 
 	// --- Exemplo 1: Find com WHERE type-safe ---
 	fmt.Println("1. Buscar usuários com nome 'Alice':")

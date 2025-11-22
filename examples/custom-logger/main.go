@@ -172,7 +172,8 @@ func (c *CompositeLogger) LogError(query string, args []interface{}, err error) 
 func main() {
 	ctx := context.Background()
 
-	fmt.Println("=== Genus ORM - Custom Logger Demo ===\n")
+	fmt.Println("=== Genus ORM - Custom Logger Demo ===")
+	fmt.Println()
 
 	// Conecta ao banco
 	sqlDB, err := sql.Open("postgres", "host=localhost user=postgres password=postgres dbname=testdb sslmode=disable")
