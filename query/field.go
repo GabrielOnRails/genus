@@ -358,3 +358,437 @@ func (f BoolField) NotIn(values ...bool) Condition {
 		Value:    values,
 	}
 }
+
+// --- Campos Opcionais para suporte a NULL ---
+
+// OptionalStringField representa um campo string que pode ser NULL.
+// Usa core.Optional[string] para tipagem segura.
+type OptionalStringField struct {
+	column string
+}
+
+func NewOptionalStringField(column string) OptionalStringField {
+	return OptionalStringField{column: column}
+}
+
+func (f OptionalStringField) ColumnName() string {
+	return f.column
+}
+
+func (f OptionalStringField) Eq(value string) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpEq,
+		Value:    value,
+	}
+}
+
+func (f OptionalStringField) Ne(value string) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNe,
+		Value:    value,
+	}
+}
+
+func (f OptionalStringField) In(values ...string) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalStringField) NotIn(values ...string) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalStringField) IsNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNull,
+	}
+}
+
+func (f OptionalStringField) IsNotNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNotNull,
+	}
+}
+
+func (f OptionalStringField) Like(pattern string) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLike,
+		Value:    pattern,
+	}
+}
+
+func (f OptionalStringField) NotLike(pattern string) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotLike,
+		Value:    pattern,
+	}
+}
+
+// OptionalIntField representa um campo int que pode ser NULL.
+type OptionalIntField struct {
+	column string
+}
+
+func NewOptionalIntField(column string) OptionalIntField {
+	return OptionalIntField{column: column}
+}
+
+func (f OptionalIntField) ColumnName() string {
+	return f.column
+}
+
+func (f OptionalIntField) Eq(value int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpEq,
+		Value:    value,
+	}
+}
+
+func (f OptionalIntField) Ne(value int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNe,
+		Value:    value,
+	}
+}
+
+func (f OptionalIntField) Gt(value int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGt,
+		Value:    value,
+	}
+}
+
+func (f OptionalIntField) Gte(value int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGte,
+		Value:    value,
+	}
+}
+
+func (f OptionalIntField) Lt(value int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLt,
+		Value:    value,
+	}
+}
+
+func (f OptionalIntField) Lte(value int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLte,
+		Value:    value,
+	}
+}
+
+func (f OptionalIntField) In(values ...int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalIntField) NotIn(values ...int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalIntField) Between(start, end int) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpBetween,
+		Value:    []int{start, end},
+	}
+}
+
+func (f OptionalIntField) IsNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNull,
+	}
+}
+
+func (f OptionalIntField) IsNotNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNotNull,
+	}
+}
+
+// OptionalInt64Field representa um campo int64 que pode ser NULL.
+type OptionalInt64Field struct {
+	column string
+}
+
+func NewOptionalInt64Field(column string) OptionalInt64Field {
+	return OptionalInt64Field{column: column}
+}
+
+func (f OptionalInt64Field) ColumnName() string {
+	return f.column
+}
+
+func (f OptionalInt64Field) Eq(value int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpEq,
+		Value:    value,
+	}
+}
+
+func (f OptionalInt64Field) Ne(value int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNe,
+		Value:    value,
+	}
+}
+
+func (f OptionalInt64Field) Gt(value int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGt,
+		Value:    value,
+	}
+}
+
+func (f OptionalInt64Field) Gte(value int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGte,
+		Value:    value,
+	}
+}
+
+func (f OptionalInt64Field) Lt(value int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLt,
+		Value:    value,
+	}
+}
+
+func (f OptionalInt64Field) Lte(value int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLte,
+		Value:    value,
+	}
+}
+
+func (f OptionalInt64Field) In(values ...int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalInt64Field) NotIn(values ...int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalInt64Field) Between(start, end int64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpBetween,
+		Value:    []int64{start, end},
+	}
+}
+
+func (f OptionalInt64Field) IsNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNull,
+	}
+}
+
+func (f OptionalInt64Field) IsNotNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNotNull,
+	}
+}
+
+// OptionalBoolField representa um campo booleano que pode ser NULL.
+type OptionalBoolField struct {
+	column string
+}
+
+func NewOptionalBoolField(column string) OptionalBoolField {
+	return OptionalBoolField{column: column}
+}
+
+func (f OptionalBoolField) ColumnName() string {
+	return f.column
+}
+
+func (f OptionalBoolField) Eq(value bool) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpEq,
+		Value:    value,
+	}
+}
+
+func (f OptionalBoolField) Ne(value bool) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNe,
+		Value:    value,
+	}
+}
+
+func (f OptionalBoolField) IsNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNull,
+	}
+}
+
+func (f OptionalBoolField) IsNotNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNotNull,
+	}
+}
+
+func (f OptionalBoolField) In(values ...bool) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalBoolField) NotIn(values ...bool) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotIn,
+		Value:    values,
+	}
+}
+
+// OptionalFloat64Field representa um campo float64 que pode ser NULL.
+type OptionalFloat64Field struct {
+	column string
+}
+
+func NewOptionalFloat64Field(column string) OptionalFloat64Field {
+	return OptionalFloat64Field{column: column}
+}
+
+func (f OptionalFloat64Field) ColumnName() string {
+	return f.column
+}
+
+func (f OptionalFloat64Field) Eq(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpEq,
+		Value:    value,
+	}
+}
+
+func (f OptionalFloat64Field) Ne(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNe,
+		Value:    value,
+	}
+}
+
+func (f OptionalFloat64Field) Gt(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGt,
+		Value:    value,
+	}
+}
+
+func (f OptionalFloat64Field) Gte(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGte,
+		Value:    value,
+	}
+}
+
+func (f OptionalFloat64Field) Lt(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLt,
+		Value:    value,
+	}
+}
+
+func (f OptionalFloat64Field) Lte(value float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLte,
+		Value:    value,
+	}
+}
+
+func (f OptionalFloat64Field) In(values ...float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalFloat64Field) NotIn(values ...float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotIn,
+		Value:    values,
+	}
+}
+
+func (f OptionalFloat64Field) Between(start, end float64) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpBetween,
+		Value:    []float64{start, end},
+	}
+}
+
+func (f OptionalFloat64Field) IsNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNull,
+	}
+}
+
+func (f OptionalFloat64Field) IsNotNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNotNull,
+	}
+}

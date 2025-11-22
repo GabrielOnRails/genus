@@ -259,30 +259,228 @@ func Table[T any](g *Genus) *query.Builder[T] {
 
 ## Comparação com Outros ORMs
 
-| Característica | GORM | Ent | **Genus** |
-|---------------|------|-----|-----------|
-| Type-safe queries | ❌ | ✅ | ✅ |
-| Retorna `[]T` | ❌ | ✅ | ✅ |
-| Zero codegen | ✅ | ❌ | ✅ |
-| Reflection mínimo | ❌ | ✅ | ✅ |
-| Campos tipados | ❌ | ✅ | ✅ |
-| API fluente | ✅ | ✅ | ✅ |
-| SQL logging automático | ⚠️ | ⚠️ | ✅ |
-| Performance monitoring | ❌ | ❌ | ✅ |
+| Característica | GORM | Ent | sqlboiler | Squirrel | **Genus 1.x** |
+|---------------|------|-----|-----------|----------|---------------|
+| Type-safe queries | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Retorna `[]T` | ❌ | ✅ | ✅ | N/A | ✅ |
+| Code generation opcional | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Reflection mínimo | ❌ | ✅ | ✅ | N/A | ✅ |
+| Campos tipados gerados | ❌ | ✅ | ⚠️ | ❌ | ✅ |
+| API fluente | ✅ | ✅ | ⚠️ | ✅ | ✅ |
+| Query builder imutável | ❌ | ✅ | ❌ | ❌ | ✅ |
+| Tipos Optional[T] | ❌ | ❌ | ⚠️ | ❌ | ✅ |
+| SQL logging automático | ⚠️ | ⚠️ | ❌ | ❌ | ✅ |
+| Performance monitoring | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Zero dependencies | ❌ | ❌ | ❌ | ✅ | ✅ |
+
+**Legenda:**
+- ✅ Suporte completo
+- ⚠️ Suporte parcial
+- ❌ Não suportado
+- N/A Não aplicável
+
+## Recursos Implementados
+
+### 1. Suporte Multi-Database
+
+Genus suporta PostgreSQL, MySQL e SQLite através de dialects:
+
+```go
+import (
+    "github.com/gabrieldias/genus/dialects/postgres"
+    "github.com/gabrieldias/genus/dialects/mysql"
+    "github.com/gabrieldias/genus/dialects/sqlite"
+)
+
+// PostgreSQL
+g := genus.New(db, postgres.New(), logger)
+
+// MySQL
+g := genus.New(db, mysql.New(), logger)
+
+// SQLite
+g := genus.New(db, sqlite.New(), logger)
+```
+
+### 2. Sistema de Migrations
+
+Genus oferece migrations automáticas e manuais:
+
+```go
+import "github.com/gabrieldias/genus/migrate"
+
+// AutoMigrate (desenvolvimento)
+migrate.AutoMigrate(ctx, db, dialect, User{}, Product{})
+
+// Manual Migrations (produção)
+migrator := migrate.New(db, dialect, logger, migrate.Config{})
+migrator.Register(migrate.Migration{
+    Version: 1,
+    Name: "create_users_table",
+    Up: func(ctx, db, dialect) error { /* ... */ },
+    Down: func(ctx, db, dialect) error { /* ... */ },
+})
+migrator.Up(ctx)
+```
+
+**CLI de Migrations:**
+```bash
+genus migrate create add_users_table  # Criar migration
+genus migrate up                      # Aplicar migrations
+genus migrate down                    # Reverter última migration
+genus migrate status                  # Ver status
+```
+
+## Versão 1.x - Recursos Principais
+
+### 3. Optional[T] - Tipos Opcionais Genéricos
+
+Genus agora oferece suporte completo para campos nullable com uma API limpa e type-safe:
+
+```go
+type User struct {
+    core.Model
+    Name  string                `db:"name"`
+    Email core.Optional[string] `db:"email"`  // Pode ser NULL
+    Age   core.Optional[int]    `db:"age"`    // Pode ser NULL
+}
+
+// Criar valores Optional
+email := core.Some("user@example.com")  // Valor presente
+age := core.None[int]()                 // Valor ausente
+
+// Verificar e usar
+if email.IsPresent() {
+    fmt.Println(email.Get())
+}
+
+// Obter com valor padrão
+userAge := age.GetOrDefault(18)
+
+// Operações funcionais
+upperEmail := core.Map(email, strings.ToUpper)
+filtered := age.Filter(func(a int) bool { return a > 18 })
+```
+
+**Vantagens do Optional[T]:**
+- ✅ API consistente e limpa (sem `sql.Null*` ou ponteiros)
+- ✅ Suporte automático para JSON marshaling/unmarshaling
+- ✅ Implementa `sql.Scanner` e `driver.Valuer`
+- ✅ Operações funcionais (Map, Filter, FlatMap)
+- ✅ Type-safe em tempo de compilação
+
+### 4. Code Generation CLI
+
+Gere campos tipados automaticamente a partir de structs Go:
+
+```bash
+# Instalar CLI
+go install github.com/gabrieldias/genus/cmd/genus@latest
+
+# Gerar campos tipados
+genus generate ./models
+
+# Resultado: cria arquivos *_fields.gen.go
+```
+
+**Antes (manual):**
+```go
+var UserFields = struct {
+    Name  query.StringField
+    Email query.OptionalStringField
+    Age   query.OptionalIntField
+}{
+    Name:  query.NewStringField("name"),
+    Email: query.NewOptionalStringField("email"),
+    Age:   query.NewOptionalIntField("age"),
+}
+```
+
+**Depois (gerado automaticamente):**
+```bash
+genus generate ./models
+# Cria user_fields.gen.go com todos os campos tipados!
+```
+
+**Vantagens:**
+- ✅ Zero boilerplate manual
+- ✅ Campos sempre sincronizados com structs
+- ✅ Detecta automaticamente tipos Optional[T]
+- ✅ Integração fácil com CI/CD
+
+### 5. Query Builder Imutável
+
+O query builder agora é completamente imutável, permitindo composição segura:
+
+```go
+// Base query não é modificada
+baseQuery := genus.Table[User]().Where(UserFields.Active.Eq(true))
+
+// Composição segura - cada query é independente
+adults := baseQuery.Where(UserFields.Age.Gte(18))
+minors := baseQuery.Where(UserFields.Age.Lt(18))
+
+// baseQuery permanece inalterada!
+// adults e minors são queries completamente separadas
+```
+
+**Vantagens:**
+- ✅ Queries podem ser reutilizadas sem efeitos colaterais
+- ✅ Thread-safe por design
+- ✅ Facilita testes e composição
+- ✅ Supera Squirrel em segurança de tipos
 
 ## Roadmap
 
-- [ ] Suporte para MySQL e SQLite
-- [ ] Migrations automáticas
+### Versão 1.x ✅ (Implementado)
+- [x] Optional[T] - Tipos opcionais genéricos
+- [x] Code generation CLI (genus generate)
+- [x] Query builder imutável
+- [x] Campos opcionais tipados (OptionalStringField, etc.)
+- [x] Suporte para MySQL e SQLite
+- [x] Migrations automáticas (AutoMigrate + Manual)
+- [x] CLI de migrations (genus migrate)
+
+### Versão 2.x (Planejado)
 - [ ] Relações (HasMany, BelongsTo, ManyToMany)
-- [ ] Code generation para campos tipados
-- [ ] Hooks avançados
+- [ ] Eager loading / Preloading
+- [ ] Join support
+- [ ] Hooks avançados (AfterCreate, BeforeUpdate, etc.)
 - [ ] Soft deletes
-- [ ] Preloading/Eager loading
+- [ ] Query caching
+- [ ] Connection pooling configuration
 
 ## Exemplos
 
-Veja `examples/basic/main.go` para um exemplo completo com todos os recursos.
+O projeto inclui vários exemplos práticos:
+
+- **`examples/basic/main.go`** - Exemplo completo com todas as funcionalidades básicas
+- **`examples/optional/main.go`** - Demonstração do uso de Optional[T] com banco de dados
+- **`examples/codegen/`** - Exemplo de code generation com genus CLI
+- **`examples/multi-database/`** - Uso com PostgreSQL, MySQL e SQLite
+- **`examples/migrations/`** - Sistema completo de migrations (AutoMigrate + Manual)
+- **`examples/logging/main.go`** - Configuração de logging customizado
+- **`examples/testing/`** - Padrões de teste com repository pattern
+
+### Executar Exemplos
+
+```bash
+# Exemplo básico
+go run examples/basic/main.go
+
+# Exemplo de Optional[T]
+go run examples/optional/main.go
+
+# Code generation
+cd examples/codegen/models
+genus generate .
+
+# Multi-database
+go run examples/multi-database/main.go
+
+# Migrations
+go run examples/migrations/main.go
+```
 
 ## Desenvolvimento
 
