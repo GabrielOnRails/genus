@@ -30,3 +30,10 @@ type Executor interface {
 type Scanner interface {
 	Scan(dest ...interface{}) error
 }
+
+// Logger é a interface para logging de queries SQL.
+// Implementações podem enviar logs para stdout, arquivo, ou serviços externos.
+type Logger interface {
+	LogQuery(query string, args []interface{}, duration int64)
+	LogError(query string, args []interface{}, err error)
+}

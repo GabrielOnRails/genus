@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gabrieldias/genus/core"
 )
@@ -13,6 +14,7 @@ import (
 type Builder[T any] struct {
 	executor   core.Executor
 	dialect    core.Dialect
+	logger     core.Logger
 	tableName  string
 	conditions []interface{} // Condition ou ConditionGroup
 	orderBy    []OrderBy
@@ -28,10 +30,11 @@ type OrderBy struct {
 }
 
 // NewBuilder cria um novo query builder.
-func NewBuilder[T any](executor core.Executor, dialect core.Dialect, tableName string) *Builder[T] {
+func NewBuilder[T any](executor core.Executor, dialect core.Dialect, logger core.Logger, tableName string) *Builder[T] {
 	return &Builder[T]{
 		executor:  executor,
 		dialect:   dialect,
+		logger:    logger,
 		tableName: tableName,
 	}
 }
@@ -78,8 +81,12 @@ func (b *Builder[T]) Select(columns ...string) *Builder[T] {
 func (b *Builder[T]) Find(ctx context.Context) ([]T, error) {
 	query, args := b.buildSelectQuery()
 
+	start := time.Now()
 	rows, err := b.executor.QueryContext(ctx, query, args...)
+	duration := time.Since(start).Nanoseconds()
+
 	if err != nil {
+		b.logger.LogError(query, args, err)
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
@@ -97,6 +104,7 @@ func (b *Builder[T]) Find(ctx context.Context) ([]T, error) {
 		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
 
+	b.logger.LogQuery(query, args, duration)
 	return results, nil
 }
 
@@ -122,11 +130,16 @@ func (b *Builder[T]) Count(ctx context.Context) (int64, error) {
 	query, args := b.buildCountQuery()
 
 	var count int64
+	start := time.Now()
 	err := b.executor.QueryRowContext(ctx, query, args...).Scan(&count)
+	duration := time.Since(start).Nanoseconds()
+
 	if err != nil {
+		b.logger.LogError(query, args, err)
 		return 0, fmt.Errorf("failed to count: %w", err)
 	}
 
+	b.logger.LogQuery(query, args, duration)
 	return count, nil
 }
 

@@ -38,6 +38,13 @@ func New(sqlDB *sql.DB, dialect core.Dialect) *Genus {
 	}
 }
 
+// NewWithLogger cria uma nova instância do Genus com um logger customizado.
+func NewWithLogger(sqlDB *sql.DB, dialect core.Dialect, logger core.Logger) *Genus {
+	return &Genus{
+		db: core.NewWithLogger(sqlDB, dialect, logger),
+	}
+}
+
 // DB retorna o core.DB subjacente para operações avançadas.
 func (g *Genus) DB() *core.DB {
 	return g.db
@@ -48,7 +55,7 @@ func (g *Genus) DB() *core.DB {
 func Table[T any](g *Genus) *query.Builder[T] {
 	var model T
 	tableName := getTableName(model)
-	return query.NewBuilder[T](g.db.Executor(), g.db.Dialect(), tableName)
+	return query.NewBuilder[T](g.db.Executor(), g.db.Dialect(), g.db.Logger(), tableName)
 }
 
 // getTableName obtém o nome da tabela para um modelo.

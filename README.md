@@ -91,6 +91,42 @@ users, err := genus.Table[User](db).
     Find(ctx)
 ```
 
+### 6. SQL Logging (Transparência Total)
+
+Genus loga **automaticamente** todas as queries SQL executadas, incluindo tempo de execução:
+
+```go
+// Logging padrão (não-verbose) - habilitado automaticamente
+db, _ := genus.Open("postgres", "...")
+genus.Table[User](db).Where(UserFields.Age.Gt(25)).Find(ctx)
+// Output: [GENUS] 2.34ms | SELECT * FROM "users" WHERE age > $1
+
+// Logging verbose (mostra argumentos)
+sqlDB, _ := sql.Open("postgres", "...")
+verboseDB := genus.New(sqlDB, core.NewDefaultLogger(true))
+// Output: [GENUS] 2.34ms | SELECT * FROM "users" WHERE age > $1 | args: [25]
+
+// Desabilitar logging
+silentDB := genus.New(sqlDB, &core.NoOpLogger{})
+
+// Logger customizado (JSON, arquivo, métricas, etc)
+type MyLogger struct{}
+func (l *MyLogger) LogQuery(query string, args []interface{}, duration int64) {
+    // Envie para seu sistema de logging
+}
+func (l *MyLogger) LogError(query string, args []interface{}, err error) {
+    // Trate erros
+}
+
+customDB := genus.New(sqlDB, &MyLogger{})
+```
+
+**Vantagens do SQL Logging:**
+- Debugging facilitado: veja exatamente qual SQL está sendo executado
+- Performance monitoring: tempo de execução em cada query
+- Auditoria: rastreie todas as operações no banco
+- Customizável: implemente `core.Logger` para enviar logs para onde quiser
+
 ## Instalação
 
 ```bash
@@ -231,6 +267,8 @@ func Table[T any](g *Genus) *query.Builder[T] {
 | Reflection mínimo | ❌ | ✅ | ✅ |
 | Campos tipados | ❌ | ✅ | ✅ |
 | API fluente | ✅ | ✅ | ✅ |
+| SQL logging automático | ⚠️ | ⚠️ | ✅ |
+| Performance monitoring | ❌ | ❌ | ✅ |
 
 ## Roadmap
 

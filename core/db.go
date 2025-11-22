@@ -13,13 +13,24 @@ import (
 type DB struct {
 	executor Executor
 	dialect  Dialect
+	logger   Logger
 }
 
-// New cria uma nova instância do Genus DB.
+// New cria uma nova instância do Genus DB com logging padrão.
 func New(sqlDB *sql.DB, dialect Dialect) *DB {
 	return &DB{
 		executor: sqlDB,
 		dialect:  dialect,
+		logger:   NewDefaultLogger(false), // logging não-verbose por padrão
+	}
+}
+
+// NewWithLogger cria uma nova instância do Genus DB com um logger customizado.
+func NewWithLogger(sqlDB *sql.DB, dialect Dialect, logger Logger) *DB {
+	return &DB{
+		executor: sqlDB,
+		dialect:  dialect,
+		logger:   logger,
 	}
 }
 
@@ -38,6 +49,7 @@ func (db *DB) WithTx(ctx context.Context, fn func(*DB) error) error {
 	txDB := &DB{
 		executor: tx,
 		dialect:  db.dialect,
+		logger:   db.logger, // propaga o logger para a transação
 	}
 
 	if err := fn(txDB); err != nil {
@@ -62,6 +74,16 @@ func (db *DB) Executor() Executor {
 // Dialect retorna o dialeto atual.
 func (db *DB) Dialect() Dialect {
 	return db.dialect
+}
+
+// Logger retorna o logger atual.
+func (db *DB) Logger() Logger {
+	return db.logger
+}
+
+// SetLogger define um novo logger.
+func (db *DB) SetLogger(logger Logger) {
+	db.logger = logger
 }
 
 // Create insere um novo registro no banco de dados.
@@ -99,10 +121,16 @@ func (db *DB) Create(ctx context.Context, model interface{}) error {
 
 	// Executa e pega o ID retornado
 	var id int64
+	start := time.Now()
 	err = db.executor.QueryRowContext(ctx, query, values...).Scan(&id)
+	duration := time.Since(start).Nanoseconds()
+
 	if err != nil {
+		db.logger.LogError(query, values, err)
 		return fmt.Errorf("failed to insert: %w", err)
 	}
+
+	db.logger.LogQuery(query, values, duration)
 
 	// Define o ID no modelo
 	setID(model, id)
@@ -153,10 +181,16 @@ func (db *DB) Update(ctx context.Context, model interface{}) error {
 		db.dialect.Placeholder(len(filteredVals)),
 	)
 
+	start := time.Now()
 	result, err := db.executor.ExecContext(ctx, query, filteredVals...)
+	duration := time.Since(start).Nanoseconds()
+
 	if err != nil {
+		db.logger.LogError(query, filteredVals, err)
 		return fmt.Errorf("failed to update: %w", err)
 	}
+
+	db.logger.LogQuery(query, filteredVals, duration)
 
 	rows, err := result.RowsAffected()
 	if err != nil {
@@ -185,10 +219,16 @@ func (db *DB) Delete(ctx context.Context, model interface{}) error {
 		db.dialect.Placeholder(1),
 	)
 
+	start := time.Now()
 	result, err := db.executor.ExecContext(ctx, query, id)
+	duration := time.Since(start).Nanoseconds()
+
 	if err != nil {
+		db.logger.LogError(query, []interface{}{id}, err)
 		return fmt.Errorf("failed to delete: %w", err)
 	}
+
+	db.logger.LogQuery(query, []interface{}{id}, duration)
 
 	rows, err := result.RowsAffected()
 	if err != nil {
