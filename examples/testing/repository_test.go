@@ -49,9 +49,13 @@ func (r *UserRepository) Create(ctx context.Context, user *User) error {
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
-	return genus.Table[User](r.db).
+	user, err := genus.Table[User](r.db).
 		Where(UserFields.Email.Eq(email)).
 		First(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *UserRepository) FindActive(ctx context.Context) ([]User, error) {
