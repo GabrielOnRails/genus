@@ -200,7 +200,7 @@ git clone https://github.com/SEU-USUARIO/genus.git
 cd genus
 
 # 2. Adicione o upstream
-git remote add upstream https://github.com/gabrieldias/genus.git
+git remote add upstream https://github.com/GabrielOnRails/genus.git
 
 # 3. Crie uma branch
 git checkout -b feature/minha-feature

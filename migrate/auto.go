@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gabrieldias/genus/core"
+	"github.com/GabrielOnRails/genus/core"
 )
 
 // AutoMigrate cria automaticamente tabelas a partir de structs.

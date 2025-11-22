@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/gabrieldias/genus"
-	"github.com/gabrieldias/genus/core"
-	"github.com/gabrieldias/genus/dialects/postgres"
-	"github.com/gabrieldias/genus/query"
+	"github.com/GabrielOnRails/genus"
+	"github.com/GabrielOnRails/genus/core"
+	"github.com/GabrielOnRails/genus/dialects/postgres"
+	"github.com/GabrielOnRails/genus/query"
 )
 
 // User é o modelo de usuário.

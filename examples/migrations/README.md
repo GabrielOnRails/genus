@@ -111,7 +111,7 @@ go run main.go
 AutoMigrate cria tabelas automaticamente a partir de structs:
 
 ```go
-import "github.com/gabrieldias/genus/migrate"
+import "github.com/GabrielOnRails/genus/migrate"
 
 type User struct {
     core.Model
@@ -139,7 +139,7 @@ err := migrate.AutoMigrate(ctx, db, dialect, User{})
 Migrations manuais dão controle total:
 
 ```go
-import "github.com/gabrieldias/genus/migrate"
+import "github.com/GabrielOnRails/genus/migrate"
 
 // Criar migrator
 migrator := migrate.New(db, dialect, logger, migrate.Config{})

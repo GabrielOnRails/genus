@@ -45,8 +45,8 @@ O comando criará arquivos `*_fields.gen.go` com campos tipados:
 package models
 
 import (
-	"github.com/gabrieldias/genus/query"
-	"github.com/gabrieldias/genus/core"
+	"github.com/GabrielOnRails/genus/query"
+	"github.com/GabrielOnRails/genus/core"
 )
 
 var UserFields = struct {
@@ -81,8 +81,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gabrieldias/genus"
-	"github.com/gabrieldias/genus/examples/codegen/models"
+	"github.com/GabrielOnRails/genus"
+	"github.com/GabrielOnRails/genus/examples/codegen/models"
 )
 
 func main() {

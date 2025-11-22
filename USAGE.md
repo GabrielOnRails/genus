@@ -14,7 +14,7 @@
 ## Instalação
 
 ```bash
-go get github.com/gabrieldias/genus
+go get github.com/GabrielOnRails/genus
 ```
 
 ## Configuração
@@ -23,7 +23,7 @@ go get github.com/gabrieldias/genus
 
 ```go
 import (
-    "github.com/gabrieldias/genus"
+    "github.com/GabrielOnRails/genus"
     _ "github.com/lib/pq" // Driver PostgreSQL
 )
 
@@ -44,7 +44,7 @@ func main() {
 ### Modelo Básico
 
 ```go
-import "github.com/gabrieldias/genus/core"
+import "github.com/GabrielOnRails/genus/core"
 
 type User struct {
     core.Model              // Fornece: ID, CreatedAt, UpdatedAt
@@ -100,7 +100,7 @@ func (u *User) AfterFind() error {
 ### Definição Básica
 
 ```go
-import "github.com/gabrieldias/genus/query"
+import "github.com/GabrielOnRails/genus/query"
 
 var UserFields = struct {
     ID       query.Int64Field

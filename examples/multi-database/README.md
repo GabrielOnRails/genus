@@ -35,10 +35,10 @@ Cada banco de dados tem suas próprias convenções:
 ```go
 import (
     "database/sql"
-    "github.com/gabrieldias/genus"
-    "github.com/gabrieldias/genus/dialects/postgres"
-    "github.com/gabrieldias/genus/dialects/mysql"
-    "github.com/gabrieldias/genus/dialects/sqlite"
+    "github.com/GabrielOnRails/genus"
+    "github.com/GabrielOnRails/genus/dialects/postgres"
+    "github.com/GabrielOnRails/genus/dialects/mysql"
+    "github.com/GabrielOnRails/genus/dialects/sqlite"
 )
 
 // PostgreSQL
