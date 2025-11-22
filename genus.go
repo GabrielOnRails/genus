@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/gabrieldias/genus/core"
-	"github.com/gabrieldias/genus/dialects/postgres"
-	"github.com/gabrieldias/genus/query"
+	"github.com/GabrielOnRails/genus/core"
+	"github.com/GabrielOnRails/genus/dialects/postgres"
+	"github.com/GabrielOnRails/genus/query"
 )
 
 // Genus é a interface pública principal do ORM.

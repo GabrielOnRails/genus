@@ -136,7 +136,7 @@ minors := baseQuery.Where(UserFields.Age.Lt(18))
 **Uso:**
 ```bash
 # Instalar
-go install github.com/gabrieldias/genus/cmd/genus@latest
+go install github.com/GabrielOnRails/genus/cmd/genus@latest
 
 # Gerar campos
 genus generate ./models
@@ -277,5 +277,5 @@ var UserFields = struct {
 
 ---
 
-[1.0.0]: https://github.com/gabrieldias/genus/releases/tag/v1.0.0
-[0.1.0]: https://github.com/gabrieldias/genus/releases/tag/v0.1.0
+[1.0.0]: https://github.com/GabrielOnRails/genus/releases/tag/v1.0.0
+[0.1.0]: https://github.com/GabrielOnRails/genus/releases/tag/v0.1.0

@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/gabrieldias/genus/core"
+	"github.com/GabrielOnRails/genus/core"
 )
 
 // User representa um usuário do sistema.

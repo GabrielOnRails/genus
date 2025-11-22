@@ -8,9 +8,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/gabrieldias/genus"
-	"github.com/gabrieldias/genus/core"
-	"github.com/gabrieldias/genus/query"
+	"github.com/GabrielOnRails/genus"
+	"github.com/GabrielOnRails/genus/core"
+	"github.com/GabrielOnRails/genus/query"
 	_ "github.com/lib/pq"
 )
 

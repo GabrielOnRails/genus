@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/gabrieldias/genus/core"
+	"github.com/GabrielOnRails/genus/core"
 )
 
 // Migration representa uma migration com funções Up e Down.

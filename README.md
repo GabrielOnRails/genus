@@ -130,7 +130,7 @@ customDB := genus.New(sqlDB, &MyLogger{})
 ## Instalação
 
 ```bash
-go get github.com/gabrieldias/genus
+go get github.com/GabrielOnRails/genus
 ```
 
 ## Quick Start
@@ -138,7 +138,7 @@ go get github.com/gabrieldias/genus
 ### 1. Defina seu Modelo
 
 ```go
-import "github.com/gabrieldias/genus/core"
+import "github.com/GabrielOnRails/genus/core"
 
 type User struct {
     core.Model        // Embedded: ID, CreatedAt, UpdatedAt
@@ -152,7 +152,7 @@ type User struct {
 ### 2. Crie Campos Tipados
 
 ```go
-import "github.com/gabrieldias/genus/query"
+import "github.com/GabrielOnRails/genus/query"
 
 var UserFields = struct {
     ID       query.Int64Field
@@ -172,7 +172,7 @@ var UserFields = struct {
 ### 3. Use!
 
 ```go
-import "github.com/gabrieldias/genus"
+import "github.com/GabrielOnRails/genus"
 
 func main() {
     ctx := context.Background()
@@ -287,9 +287,9 @@ Genus suporta PostgreSQL, MySQL e SQLite através de dialects:
 
 ```go
 import (
-    "github.com/gabrieldias/genus/dialects/postgres"
-    "github.com/gabrieldias/genus/dialects/mysql"
-    "github.com/gabrieldias/genus/dialects/sqlite"
+    "github.com/GabrielOnRails/genus/dialects/postgres"
+    "github.com/GabrielOnRails/genus/dialects/mysql"
+    "github.com/GabrielOnRails/genus/dialects/sqlite"
 )
 
 // PostgreSQL
@@ -307,7 +307,7 @@ g := genus.New(db, sqlite.New(), logger)
 Genus oferece migrations automáticas e manuais:
 
 ```go
-import "github.com/gabrieldias/genus/migrate"
+import "github.com/GabrielOnRails/genus/migrate"
 
 // AutoMigrate (desenvolvimento)
 migrate.AutoMigrate(ctx, db, dialect, User{}, Product{})
@@ -375,7 +375,7 @@ Gere campos tipados automaticamente a partir de structs Go:
 
 ```bash
 # Instalar CLI
-go install github.com/gabrieldias/genus/cmd/genus@latest
+go install github.com/GabrielOnRails/genus/cmd/genus@latest
 
 # Gerar campos tipados
 genus generate ./models
