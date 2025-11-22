@@ -47,7 +47,8 @@ var UserFields = struct {
 }
 
 func main() {
-	fmt.Println("=== Genus Multi-Database Example ===\n")
+	fmt.Println("=== Genus Multi-Database Example ===")
+	fmt.Println()
 
 	ctx := context.Background()
 
@@ -96,7 +97,7 @@ func runPostgreSQL(ctx context.Context) error {
 	}
 
 	// Criar Genus com dialect PostgreSQL
-	g := genus.New(db, postgres.New(), core.NewDefaultLogger(true))
+	g := genus.NewWithLogger(db, postgres.New(), core.NewDefaultLogger(true))
 
 	// Criar tabela
 	createTablePostgreSQL(db)
@@ -119,7 +120,7 @@ func runMySQL(ctx context.Context) error {
 	}
 
 	// Criar Genus com dialect MySQL
-	g := genus.New(db, mysql.New(), core.NewDefaultLogger(true))
+	g := genus.NewWithLogger(db, mysql.New(), core.NewDefaultLogger(true))
 
 	// Criar tabela
 	createTableMySQL(db)
@@ -137,7 +138,7 @@ func runSQLite(ctx context.Context) error {
 	defer db.Close()
 
 	// Criar Genus com dialect SQLite
-	g := genus.New(db, sqlite.New(), core.NewDefaultLogger(true))
+	g := genus.NewWithLogger(db, sqlite.New(), core.NewDefaultLogger(true))
 
 	// Criar tabela
 	createTableSQLite(db)
@@ -157,13 +158,13 @@ func testCRUD(ctx context.Context, g *genus.Genus, dbName string) error {
 		IsActive: true,
 	}
 
-	if err := g.Create(ctx, user); err != nil {
+	if err := g.DB().Create(ctx, user); err != nil {
 		return fmt.Errorf("create failed: %w", err)
 	}
 	fmt.Printf("   - Created user with ID: %d\n", user.ID)
 
 	// Find
-	users, err := g.Table[User]().
+	users, err := genus.Table[User](g).
 		Where(UserFields.Name.Eq("Alice")).
 		Find(ctx)
 
@@ -183,13 +184,13 @@ func testCRUD(ctx context.Context, g *genus.Genus, dbName string) error {
 
 	// Update
 	user.Age = core.Some(26)
-	if err := g.Update(ctx, user); err != nil {
+	if err := g.DB().Update(ctx, user); err != nil {
 		return fmt.Errorf("update failed: %w", err)
 	}
 	fmt.Printf("   - Updated user age to 26\n")
 
 	// Count
-	count, err := g.Table[User]().
+	count, err := genus.Table[User](g).
 		Where(UserFields.IsActive.Eq(true)).
 		Count(ctx)
 
@@ -199,7 +200,7 @@ func testCRUD(ctx context.Context, g *genus.Genus, dbName string) error {
 	fmt.Printf("   - Active users count: %d\n", count)
 
 	// Delete
-	if err := g.Delete(ctx, user); err != nil {
+	if err := g.DB().Delete(ctx, user); err != nil {
 		return fmt.Errorf("delete failed: %w", err)
 	}
 	fmt.Printf("   - Deleted user\n")

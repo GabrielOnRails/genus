@@ -38,7 +38,8 @@ var UserFields = struct {
 func main() {
 	ctx := context.Background()
 
-	fmt.Println("=== Genus ORM - SQL Logging Demo ===\n")
+	fmt.Println("=== Genus ORM - SQL Logging Demo ===")
+	fmt.Println()
 
 	// --- Exemplo 1: Logging Padrão (não-verbose) ---
 	fmt.Println("1. Logging Padrão (mostra SQL e tempo de execução):")

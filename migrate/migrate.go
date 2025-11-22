@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/GabrielOnRails/genus/core"
@@ -232,13 +233,36 @@ func (m *Migrator) runMigration(ctx context.Context, migration Migration, up boo
 
 // createMigrationsTable cria a tabela de controle de migrations.
 func (m *Migrator) createMigrationsTable(ctx context.Context) error {
+	// Detectar o tipo de dialeto pelos métodos
+	placeholder := m.dialect.Placeholder(1)
+	quotedIdentifier := m.dialect.QuoteIdentifier("test")
+
+	var versionType, nameType, timestampType string
+
+	if strings.HasPrefix(placeholder, "$") {
+		// PostgreSQL
+		versionType = "BIGINT"
+		nameType = "VARCHAR(255)"
+		timestampType = "TIMESTAMP"
+	} else if strings.HasPrefix(quotedIdentifier, "`") {
+		// MySQL
+		versionType = "BIGINT"
+		nameType = "VARCHAR(255)"
+		timestampType = "DATETIME"
+	} else {
+		// SQLite
+		versionType = "INTEGER"
+		nameType = "TEXT"
+		timestampType = "DATETIME"
+	}
+
 	query := fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
-			version BIGINT PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			applied_at TIMESTAMP NOT NULL
+			version %s PRIMARY KEY,
+			name %s NOT NULL,
+			applied_at %s NOT NULL
 		)
-	`, m.dialect.QuoteIdentifier(m.tableName))
+	`, m.dialect.QuoteIdentifier(m.tableName), versionType, nameType, timestampType)
 
 	if _, err := m.db.ExecContext(ctx, query); err != nil {
 		return err

@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// fieldPath representa o caminho para um campo através de embedded structs
+type fieldPath []int
+
 // scanStruct faz o scan de uma row para uma struct.
 // Esta é uma das poucas funções que usa reflection, mas é controlada e isolada.
 func scanStruct(rows *sql.Rows, dest interface{}) error {
@@ -25,15 +28,21 @@ func scanStruct(rows *sql.Rows, dest interface{}) error {
 		return fmt.Errorf("failed to get columns: %w", err)
 	}
 
-	// Mapeia os nomes das colunas para os campos da struct
+	// Mapeia os nomes das colunas para os caminhos dos campos da struct
 	fieldMap := buildFieldMap(destValue.Type())
 
 	// Cria os ponteiros para os valores a serem escaneados
 	scanValues := make([]interface{}, len(columns))
 	for i, colName := range columns {
-		if fieldIndex, ok := fieldMap[colName]; ok {
-			field := destValue.Field(fieldIndex)
-			scanValues[i] = field.Addr().Interface()
+		if path, ok := fieldMap[colName]; ok {
+			field := getFieldByPath(destValue, path)
+			if field.IsValid() && field.CanAddr() {
+				scanValues[i] = field.Addr().Interface()
+			} else {
+				// Se o campo não é válido, usa um placeholder
+				var placeholder interface{}
+				scanValues[i] = &placeholder
+			}
 		} else {
 			// Se a coluna não existe na struct, usa um placeholder
 			var placeholder interface{}
@@ -44,30 +53,54 @@ func scanStruct(rows *sql.Rows, dest interface{}) error {
 	return rows.Scan(scanValues...)
 }
 
-// buildFieldMap constrói um mapa de nome de coluna -> índice do campo.
-func buildFieldMap(typ reflect.Type) map[string]int {
-	fieldMap := make(map[string]int)
+// getFieldByPath navega até um campo usando um caminho de índices
+func getFieldByPath(value reflect.Value, path fieldPath) reflect.Value {
+	current := value
+	for _, index := range path {
+		if current.Kind() == reflect.Ptr {
+			current = current.Elem()
+		}
+		if index >= current.NumField() {
+			return reflect.Value{}
+		}
+		current = current.Field(index)
+	}
+	return current
+}
+
+// buildFieldMap constrói um mapa de nome de coluna -> caminho do campo.
+func buildFieldMap(typ reflect.Type) map[string]fieldPath {
+	return buildFieldMapWithPrefix(typ, nil)
+}
+
+// buildFieldMapWithPrefix constrói um mapa de nome de coluna -> caminho do campo com suporte para embedded structs.
+func buildFieldMapWithPrefix(typ reflect.Type, parentPath fieldPath) map[string]fieldPath {
+	fieldMap := make(map[string]fieldPath)
 
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
+		currentPath := append(fieldPath(nil), parentPath...)
+		currentPath = append(currentPath, i)
 
 		// Se o campo é um embedded struct, processa recursivamente
 		if field.Anonymous {
-			embeddedMap := buildFieldMap(field.Type)
-			for k := range embeddedMap {
-				fieldMap[k] = i // Nota: simplificado, não lida com deep nesting
+			embeddedMap := buildFieldMapWithPrefix(field.Type, currentPath)
+
+			// Mescla o mapa do embedded struct com o mapa atual
+			for k, v := range embeddedMap {
+				fieldMap[k] = v
 			}
 			continue
 		}
 
 		// Obtém o nome da coluna da tag `db`
 		colName := field.Tag.Get("db")
-		if colName == "" {
-			// Se não tem tag, usa o nome do campo em snake_case
-			colName = toSnakeCase(field.Name)
+		if colName == "" || colName == "-" {
+			// Se não tem tag ou é "-", pula o campo
+			continue
 		}
 
-		fieldMap[colName] = i
+		fieldMap[colName] = currentPath
 	}
 
 	return fieldMap

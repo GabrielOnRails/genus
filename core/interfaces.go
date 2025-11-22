@@ -3,7 +3,11 @@ package core
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
+
+// ErrValidation é retornado quando a validação de um modelo falha.
+var ErrValidation = errors.New("validation failed")
 
 // Dialect define a interface para diferentes dialetos de banco de dados.
 // Cada dialeto (PostgreSQL, MySQL, SQLite) implementa esta interface.

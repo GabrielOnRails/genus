@@ -5,6 +5,66 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2024-01-XX
+
+### Corrigido
+
+#### 1. **Bug Crítico: Scanning com core.Model Embedded**
+- **Problema:** Ao fazer scan de resultados SQL para structs com `core.Model` embedded, ocorria erro pois o código tentava escanear para o campo embedded inteiro ao invés dos campos individuais (ID, CreatedAt, UpdatedAt)
+- **Solução:** Implementado sistema de `fieldPath` em `query/scanner.go` que navega corretamente através de structs embedded usando um caminho de índices
+- **Impacto:** Agora todas as queries com modelos que usam `core.Model` funcionam corretamente
+- **Arquivo:** `query/scanner.go`
+
+#### 2. **Bug: AutoMigrate com SQLite (Sintaxe MySQL Incorreta)**
+- **Problema:** `migrate.AutoMigrate()` gerava SQL com sintaxe `AUTO_INCREMENT` do MySQL, que SQLite não suporta
+- **Solução:** Implementado detecção de dialeto baseada em `Placeholder()` e `QuoteIdentifier()`:
+  - PostgreSQL: usa `SERIAL`
+  - MySQL: usa `INTEGER AUTO_INCREMENT`
+  - SQLite: usa `INTEGER` (auto-increment automático para INTEGER PRIMARY KEY)
+- **Impacto:** AutoMigrate agora funciona corretamente em SQLite
+- **Arquivo:** `migrate/auto.go`
+
+#### 3. **Bug: createMigrationsTable Usando Tipos Genéricos**
+- **Problema:** Tabela de migrations usava tipos genéricos (VARCHAR, TIMESTAMP) que podem não funcionar em todos os dialetos
+- **Solução:** Implementado detecção de dialeto e uso de tipos específicos:
+  - PostgreSQL: `BIGINT`, `VARCHAR(255)`, `TIMESTAMP`
+  - MySQL: `BIGINT`, `VARCHAR(255)`, `DATETIME`
+  - SQLite: `INTEGER`, `TEXT`, `DATETIME`
+- **Impacto:** Sistema de migrations funciona corretamente em todos os dialetos suportados
+- **Arquivo:** `migrate/migrate.go`
+
+### Adicionado
+
+#### 1. **core.ErrValidation**
+- Adicionado erro `ErrValidation` que estava faltando e era usado nos exemplos
+- **Arquivo:** `core/interfaces.go`
+
+#### 2. **Float64Field**
+- Adicionado tipo `Float64Field` para campos float64 não-nullable
+- Já existia `OptionalFloat64Field` mas faltava a versão não-opcional
+- Suporta todos os operadores: Eq, Ne, Gt, Gte, Lt, Lte, In, NotIn, Between, IsNull, IsNotNull
+- **Arquivo:** `query/field.go`
+
+#### 3. **Dependências SQL Drivers**
+- Adicionadas dependências dos drivers SQL oficiais:
+  - `github.com/lib/pq` (PostgreSQL)
+  - `github.com/go-sql-driver/mysql` (MySQL)
+  - `github.com/mattn/go-sqlite3` (SQLite)
+- **Arquivo:** `go.mod`
+
+### Corrigido - Exemplos
+
+#### 1. **Atualizados Exemplos para API Correta**
+- Corrigido uso de `genus.New()` para `genus.NewWithLogger()`
+- Corrigido chamadas de CRUD: `g.Create()` → `g.DB().Create()`
+- Corrigido Table builder: `g.Table[T]()` → `genus.Table[T](g)`
+- **Arquivos:** `examples/optional/main.go`, `examples/migrations/main.go`, `examples/multi-database/main.go`
+
+#### 2. **Corrigidos fmt.Println com Newlines Redundantes**
+- Substituído `fmt.Println("text\n")` por `fmt.Println("text")` seguido de `fmt.Println()`
+- Corrige warning do linter: "fmt.Println arg list ends with redundant newline"
+- **Arquivos:** Todos os exemplos
+
 ## [1.0.0] - 2024-01-XX
 
 ### Adicionado - Versão 1.x (Usabilidade - Performance e Composição)
