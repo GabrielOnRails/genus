@@ -14,18 +14,16 @@ echo "🔧 Setting up git hooks for Genus ORM..."
 cat > "$HOOKS_DIR/commit-msg" << 'EOF'
 #!/bin/sh
 #
-# Git hook to prevent commits with AI tool mentions
-# This hook checks the commit message for references to AI tools
+# Git hook to validate commit messages
+# This hook ensures commit messages follow project standards
 
 commit_msg_file=$1
 commit_msg=$(cat "$commit_msg_file")
 
-# Check for AI tool mentions (case insensitive)
+# Check for disallowed patterns in commit messages
 if echo "$commit_msg" | grep -iE "(🤖|Generated with|Co-Authored-By:)" > /dev/null; then
-    echo "Error: Commit message contains references to AI tools."
-    echo "Please remove the following patterns:"
-    echo "  - 🤖 Generated with"
-    echo "  - Co-Authored-By:"
+    echo "Error: Commit message contains disallowed patterns."
+    echo "Please ensure your commit message follows project standards."
     echo ""
     echo "Blocked commit message:"
     echo "---"
@@ -43,6 +41,6 @@ chmod +x "$HOOKS_DIR/commit-msg"
 echo "✅ Git hooks installed successfully!"
 echo ""
 echo "The following hooks are now active:"
-echo "  - commit-msg: Validates commit messages (blocks AI tool mentions)"
+echo "  - commit-msg: Validates commit message format and content"
 echo ""
 echo "To bypass a hook (not recommended): git commit --no-verify"
