@@ -261,6 +261,46 @@ func (b *UltraFastBuilder[T]) scanWithReflection(rows *sql.Rows) ([]T, error) {
 	return results, rows.Err()
 }
 
+// scanOneReflection scans a single row using reflection.
+// Used as a fallback when no scan function is registered.
+func (b *UltraFastBuilder[T]) scanOneReflection(rows *sql.Rows) (T, error) {
+	var item T
+	columns, err := rows.Columns()
+	if err != nil {
+		return item, err
+	}
+
+	var model T
+	typ := reflect.TypeOf(model)
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	fieldMap := GetCachedFieldMap(typ)
+	numCols := len(columns)
+	scanValues := make([]interface{}, numCols)
+	var placeholder interface{}
+
+	itemVal := reflect.ValueOf(&item).Elem()
+	for i, colName := range columns {
+		if path, ok := fieldMap[colName]; ok {
+			field := getFieldByPath(itemVal, path)
+			if field.IsValid() && field.CanAddr() {
+				scanValues[i] = field.Addr().Interface()
+			} else {
+				scanValues[i] = &placeholder
+			}
+		} else {
+			scanValues[i] = &placeholder
+		}
+	}
+
+	if err := rows.Scan(scanValues...); err != nil {
+		return item, err
+	}
+	return item, nil
+}
+
 // First returns the first result.
 func (b *UltraFastBuilder[T]) First(ctx context.Context) (T, error) {
 	b.limit = 1

@@ -303,6 +303,31 @@ func (b *FastBuilder[T]) scanAllFast(rows *sql.Rows) ([]T, error) {
 	return results, rows.Err()
 }
 
+// scanOneFast scans a single row using cached field maps.
+// columns, numCols, scanValues, and placeholder are reused across calls for efficiency.
+func (b *FastBuilder[T]) scanOneFast(rows *sql.Rows, columns []string, numCols int, scanValues []interface{}, placeholder *interface{}) (T, error) {
+	var item T
+	itemVal := reflect.ValueOf(&item).Elem()
+
+	for i, colName := range columns {
+		if path, ok := b.fieldMap[colName]; ok {
+			field := getFieldByPath(itemVal, path)
+			if field.IsValid() && field.CanAddr() {
+				scanValues[i] = field.Addr().Interface()
+			} else {
+				scanValues[i] = placeholder
+			}
+		} else {
+			scanValues[i] = placeholder
+		}
+	}
+
+	if err := rows.Scan(scanValues...); err != nil {
+		return item, err
+	}
+	return item, nil
+}
+
 // Count returns the count of matching rows.
 func (b *FastBuilder[T]) Count(ctx context.Context) (int64, error) {
 	var sb strings.Builder

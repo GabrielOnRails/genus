@@ -540,3 +540,73 @@ var NewTracedExecutor = tracing.NewTracedExecutor
 
 // TracedExecutorConfig configura o TracedExecutor.
 type TracedExecutorConfig = tracing.TracedExecutorConfig
+
+// --- Metrics ---
+
+// MetricsCollector collects database operation metrics (latency, counts, errors).
+type MetricsCollector = tracing.MetricsCollector
+
+// MetricsSnapshot is a point-in-time snapshot of collected metrics.
+type MetricsSnapshot = tracing.MetricsSnapshot
+
+// PoolMetrics contains database connection pool statistics.
+type PoolMetrics = tracing.PoolMetrics
+
+// MetricsExecutor wraps an Executor and collects metrics.
+type MetricsExecutor = tracing.MetricsExecutor
+
+// NewMetricsCollector creates a new metrics collector.
+var NewMetricsCollector = tracing.NewMetricsCollector
+
+// NewMetricsExecutor creates an executor that records metrics.
+var NewMetricsExecutor = tracing.NewMetricsExecutor
+
+// MetricsConfig contains configuration for OpenWithMetrics.
+type MetricsConfig struct {
+	// Collector is the metrics collector. If nil, a new one is created.
+	Collector *tracing.MetricsCollector
+
+	// PoolConfig is optional connection pool configuration.
+	PoolConfig *core.PoolConfig
+}
+
+// OpenWithMetrics creates a database connection with metrics collection enabled.
+// The MetricsCollector is accessible via the returned config for querying snapshots.
+//
+// Example:
+//
+//	mc := genus.NewMetricsCollector()
+//	db, err := genus.OpenWithMetrics("postgres", dsn, genus.MetricsConfig{Collector: mc})
+//	// Later:
+//	snap := mc.Snapshot()
+//	fmt.Printf("Total queries: %d, P95: %dus\n", snap.TotalQueries, snap.P95QueryDuration)
+func OpenWithMetrics(driver, dsn string, config MetricsConfig) (*Genus, error) {
+	sqlDB, err := sql.Open(driver, dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply pool config
+	poolConfig := config.PoolConfig
+	if poolConfig == nil {
+		defaultConfig := core.DefaultPoolConfig()
+		poolConfig = &defaultConfig
+	}
+	poolConfig.Apply(sqlDB)
+
+	dialect := dialects.DetectDialect(driver)
+
+	// Setup metrics collector
+	collector := config.Collector
+	if collector == nil {
+		collector = tracing.NewMetricsCollector()
+	}
+	collector.SetPoolStatsFromDB(sqlDB)
+
+	// Wrap executor with metrics
+	metricsExecutor := tracing.NewMetricsExecutor(sqlDB, collector)
+
+	return &Genus{
+		db: core.NewWithExecutor(metricsExecutor, dialect),
+	}, nil
+}

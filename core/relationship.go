@@ -114,8 +114,12 @@ func parseModelRelationships(model interface{}) (*ModelRelationships, error) {
 	return relationships, nil
 }
 
-// parseRelationTag faz o parsing de uma tag relation.
+// ParseRelationTag faz o parsing de uma tag relation.
 // Formato: relation:"has_many,foreign_key=user_id,references=id"
+func ParseRelationTag(field reflect.StructField, tag string) (*RelationshipMeta, error) {
+	return parseRelationTag(field, tag)
+}
+
 func parseRelationTag(field reflect.StructField, tag string) (*RelationshipMeta, error) {
 	parts := splitTag(tag)
 	if len(parts) == 0 {
