@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 )
 
 func TestNoopTracer(t *testing.T) {
@@ -139,42 +140,42 @@ func TestOTelAdapter(t *testing.T) {
 	}
 }
 
-func TestMetricsCollector(t *testing.T) {
+func TestMetricsCollectorOTel(t *testing.T) {
 	collector := NewMetricsCollector()
 
-	// Record some queries
-	collector.RecordQuery("SELECT", 10, nil)
-	collector.RecordQuery("SELECT", 15, nil)
-	collector.RecordQuery("INSERT", 5, nil)
-	collector.RecordQuery("SELECT", 20, sql.ErrNoRows)
+	// Record some queries using the new API
+	collector.recordQuery(10*time.Millisecond, nil, "SELECT")
+	collector.recordQuery(15*time.Millisecond, nil, "SELECT")
+	collector.recordExec(5*time.Millisecond, nil, "INSERT")
+	collector.recordQuery(20*time.Millisecond, sql.ErrNoRows, "SELECT")
 
-	metrics := collector.GetMetrics()
+	snap := collector.Snapshot()
 
-	if metrics.TotalQueries != 4 {
-		t.Errorf("Expected 4 total queries, got %d", metrics.TotalQueries)
+	if snap.TotalQueries != 3 {
+		t.Errorf("Expected 3 total queries, got %d", snap.TotalQueries)
 	}
 
-	if metrics.TotalErrors != 1 {
-		t.Errorf("Expected 1 error, got %d", metrics.TotalErrors)
+	if snap.QueryErrors != 1 {
+		t.Errorf("Expected 1 query error, got %d", snap.QueryErrors)
 	}
 
-	if metrics.TotalDurationMs != 50 {
-		t.Errorf("Expected 50ms total duration, got %d", metrics.TotalDurationMs)
+	if snap.TotalExecs != 1 {
+		t.Errorf("Expected 1 exec, got %d", snap.TotalExecs)
 	}
 
-	if metrics.QueriesByOp["SELECT"] != 3 {
-		t.Errorf("Expected 3 SELECT queries, got %d", metrics.QueriesByOp["SELECT"])
+	if snap.OperationCounts["SELECT"] != 3 {
+		t.Errorf("Expected 3 SELECT operations, got %d", snap.OperationCounts["SELECT"])
 	}
 
-	if metrics.QueriesByOp["INSERT"] != 1 {
-		t.Errorf("Expected 1 INSERT query, got %d", metrics.QueriesByOp["INSERT"])
+	if snap.OperationCounts["INSERT"] != 1 {
+		t.Errorf("Expected 1 INSERT operation, got %d", snap.OperationCounts["INSERT"])
 	}
 
 	// Test reset
 	collector.Reset()
-	metrics = collector.GetMetrics()
-	if metrics.TotalQueries != 0 {
-		t.Errorf("Expected 0 queries after reset, got %d", metrics.TotalQueries)
+	snap = collector.Snapshot()
+	if snap.TotalQueries != 0 {
+		t.Errorf("Expected 0 queries after reset, got %d", snap.TotalQueries)
 	}
 }
 
