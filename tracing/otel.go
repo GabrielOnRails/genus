@@ -298,47 +298,10 @@ func (tl *TracingLogger) LogError(query string, args []interface{}, err error) {
 	}
 }
 
-// QueryMetrics coleta métricas de queries.
+// QueryMetrics coleta métricas de queries (deprecated: use MetricsCollector from metrics.go).
 type QueryMetrics struct {
 	TotalQueries    int64
 	TotalErrors     int64
 	TotalDurationMs int64
 	QueriesByOp     map[string]int64
-}
-
-// MetricsCollector coleta métricas de queries.
-type MetricsCollector struct {
-	metrics *QueryMetrics
-}
-
-// NewMetricsCollector cria um novo coletor de métricas.
-func NewMetricsCollector() *MetricsCollector {
-	return &MetricsCollector{
-		metrics: &QueryMetrics{
-			QueriesByOp: make(map[string]int64),
-		},
-	}
-}
-
-// RecordQuery registra uma query executada.
-func (mc *MetricsCollector) RecordQuery(operation string, durationMs int64, err error) {
-	mc.metrics.TotalQueries++
-	mc.metrics.TotalDurationMs += durationMs
-	mc.metrics.QueriesByOp[operation]++
-
-	if err != nil {
-		mc.metrics.TotalErrors++
-	}
-}
-
-// GetMetrics retorna as métricas coletadas.
-func (mc *MetricsCollector) GetMetrics() QueryMetrics {
-	return *mc.metrics
-}
-
-// Reset limpa as métricas.
-func (mc *MetricsCollector) Reset() {
-	mc.metrics = &QueryMetrics{
-		QueriesByOp: make(map[string]int64),
-	}
 }

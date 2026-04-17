@@ -78,8 +78,14 @@ func executePreload[T any](
 				return err
 			}
 		case core.Polymorphic:
-			if err := preloadPolymorphic(ctx, executor, dialect, logger, results, relMeta, spec.Nested); err != nil {
-				return err
+			if isPolymorphicHasMany[T](relMeta) {
+				if err := preloadHasPolymorphic(ctx, executor, dialect, logger, results, relMeta, spec.Nested); err != nil {
+					return err
+				}
+			} else {
+				if err := preloadPolymorphic(ctx, executor, dialect, logger, results, relMeta, spec.Nested); err != nil {
+					return err
+				}
 			}
 		default:
 			return fmt.Errorf("unsupported relationship type: %s", relMeta.Type)
@@ -674,6 +680,155 @@ func preloadPolymorphic[T any](
 	}
 
 	return nil
+}
+
+// preloadHasPolymorphic carrega o lado "has many" de um relacionamento polimórfico.
+// Exemplo: Post has many Comments (polymorphic) where commentable_type = 'post' and commentable_id = post.id
+//
+// Tag: relation:"polymorphic,polymorphic=commentable"
+// The parent's table name is used as the polymorphic type value.
+func preloadHasPolymorphic[T any](
+	ctx context.Context,
+	executor core.Executor,
+	dialect core.Dialect,
+	logger core.Logger,
+	parents []T,
+	meta *core.RelationshipMeta,
+	nested []*PreloadSpec,
+) error {
+	if len(parents) == 0 {
+		return nil
+	}
+
+	// 1. Collect parent IDs
+	parentIDs := make([]int64, 0, len(parents))
+	for _, parent := range parents {
+		v := reflect.ValueOf(parent)
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+		idField := v.FieldByName("ID")
+		if !idField.IsValid() {
+			continue
+		}
+		parentIDs = append(parentIDs, idField.Int())
+	}
+
+	if len(parentIDs) == 0 {
+		return nil
+	}
+
+	// 2. Determine the polymorphic type name from the parent's table name
+	var zero T
+	parentTableName := getTableNameFromType(reflect.TypeOf(zero))
+
+	// 3. Determine the child table name
+	childTableName := getTableNameFromType(meta.FieldType)
+
+	// 4. Query: SELECT * FROM child_table WHERE type_col = 'parent_table' AND id_col IN (parent_ids)
+	placeholders := make([]string, len(parentIDs))
+	args := make([]interface{}, 0, len(parentIDs)+1)
+	args = append(args, parentTableName)
+
+	for i, id := range parentIDs {
+		placeholders[i] = dialect.Placeholder(i + 2) // +2 because $1 is the type
+		args = append(args, id)
+	}
+
+	q := fmt.Sprintf(
+		"SELECT * FROM %s WHERE %s = %s AND %s IN (%s)",
+		dialect.QuoteIdentifier(childTableName),
+		meta.PolymorphicType,
+		dialect.Placeholder(1),
+		meta.PolymorphicID,
+		strings.Join(placeholders, ", "),
+	)
+
+	rows, err := executor.QueryContext(ctx, q, args...)
+	if err != nil {
+		logger.LogError(q, args, err)
+		return fmt.Errorf("failed to preload polymorphic has_many %s: %w", meta.FieldName, err)
+	}
+	defer rows.Close()
+
+	// 5. Scan results and group by polymorphic_id
+	childrenMap := make(map[int64][]reflect.Value)
+
+	for rows.Next() {
+		childType := meta.FieldType
+		if childType.Kind() == reflect.Slice {
+			childType = childType.Elem()
+		}
+		if childType.Kind() == reflect.Ptr {
+			childType = childType.Elem()
+		}
+
+		child := reflect.New(childType).Interface()
+
+		if err := scanStruct(rows, child); err != nil {
+			return fmt.Errorf("failed to scan polymorphic child: %w", err)
+		}
+
+		childValue := reflect.ValueOf(child).Elem()
+
+		// Get the polymorphic ID value
+		polyIDField := childValue.FieldByName(toPascalCase(meta.PolymorphicID))
+		if !polyIDField.IsValid() {
+			continue
+		}
+
+		parentID := polyIDField.Int()
+		childrenMap[parentID] = append(childrenMap[parentID], childValue)
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("rows iteration error: %w", err)
+	}
+
+	// 6. Assign children to parents
+	for i := range parents {
+		v := reflect.ValueOf(&parents[i]).Elem()
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+
+		idField := v.FieldByName("ID")
+		if !idField.IsValid() {
+			continue
+		}
+		parentID := idField.Int()
+
+		relField := v.FieldByName(meta.FieldName)
+		if !relField.IsValid() || !relField.CanSet() {
+			continue
+		}
+
+		if children, ok := childrenMap[parentID]; ok {
+			slice := reflect.MakeSlice(relField.Type(), len(children), len(children))
+			for j, child := range children {
+				slice.Index(j).Set(child)
+			}
+			relField.Set(slice)
+		}
+	}
+
+	return nil
+}
+
+// isPolymorphicHasMany determines if a polymorphic relationship is the "has many" side.
+// If the parent model does NOT have the polymorphic type/id fields, it's has_many.
+// If it DOES have them, it's the belongs_to side.
+func isPolymorphicHasMany[T any](meta *core.RelationshipMeta) bool {
+	var zero T
+	t := reflect.TypeOf(zero)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	// If the parent has the polymorphic type field, it's belongs_to
+	typeFieldName := toPascalCase(meta.PolymorphicType)
+	_, hasTypeField := t.FieldByName(typeFieldName)
+	return !hasTypeField
 }
 
 // toSnakeCasePlural converte PascalCase para snake_case (simplificado).

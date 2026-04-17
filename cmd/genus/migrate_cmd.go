@@ -32,6 +32,8 @@ func runMigrate() error {
 		return runMigrateStatus()
 	case "create":
 		return runMigrateCreate()
+	case "visualize", "viz":
+		return runMigrateVisualize()
 	case "help", "--help", "-h":
 		printMigrateUsage()
 		return nil
@@ -288,6 +290,110 @@ var Migration{{.Version}} = migrate.Migration{
 }
 `
 
+func runMigrateVisualize() error {
+	args := os.Args[3:]
+
+	var (
+		format        = "ascii"
+		migrationsDir = "./migrations"
+		outputFile    = ""
+	)
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--format", "-f":
+			if i+1 < len(args) {
+				format = args[i+1]
+				i++
+			}
+		case "--dir", "-d":
+			if i+1 < len(args) {
+				migrationsDir = args[i+1]
+				i++
+			}
+		case "--output", "-o":
+			if i+1 < len(args) {
+				outputFile = args[i+1]
+				i++
+			}
+		case "-h", "--help":
+			printMigrateVisualizeUsage()
+			return nil
+		}
+	}
+
+	// Validate format
+	formatMap := map[string]migrate.OutputFormat{
+		"ascii":   migrate.OutputFormatASCII,
+		"json":    migrate.OutputFormatJSON,
+		"dot":     migrate.OutputFormatDOT,
+		"mermaid": migrate.OutputFormatMermaid,
+		"html":    migrate.OutputFormatHTML,
+	}
+
+	outputFormat, ok := formatMap[format]
+	if !ok {
+		return fmt.Errorf("unknown format: %s (valid: ascii, json, dot, mermaid, html)", format)
+	}
+
+	// Connect to database for migration status
+	db, _, err := connectDB()
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
+	ctx := context.Background()
+
+	visualizer := migrate.NewMigrationVisualizer(migrationsDir, db)
+
+	// Choose output writer
+	var writer *os.File
+	if outputFile != "" {
+		writer, err = os.Create(outputFile)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %w", err)
+		}
+		defer writer.Close()
+	} else {
+		writer = os.Stdout
+	}
+
+	if outputFile == "" {
+		fmt.Fprintf(os.Stderr, "%sVisualizing migrations from %s...%s\n\n", colorCyan, migrationsDir, colorReset)
+	}
+
+	if err := visualizer.Visualize(ctx, outputFormat, writer); err != nil {
+		return fmt.Errorf("failed to visualize migrations: %w", err)
+	}
+
+	if outputFile != "" {
+		fmt.Printf("%s[OK]%s Visualization saved to: %s\n", colorGreen, colorReset, outputFile)
+	}
+
+	return nil
+}
+
+func printMigrateVisualizeUsage() {
+	fmt.Println(`Visualize migration dependency graph
+
+Usage:
+  genus migrate visualize [flags]
+
+Flags:
+  -f, --format <fmt>     Output format: ascii, json, dot, mermaid, html (default: ascii)
+  -d, --dir <path>       Migrations directory (default: ./migrations)
+  -o, --output <file>    Output to file instead of stdout
+  -h, --help             Show this help message
+
+Examples:
+  genus migrate visualize                           # ASCII tree in terminal
+  genus migrate visualize -f mermaid                # Mermaid diagram
+  genus migrate visualize -f html -o graph.html     # Interactive HTML graph
+  genus migrate visualize -f dot | dot -Tpng -o graph.png  # Graphviz PNG`)
+}
+
 func printMigrateUsage() {
 	fmt.Println(`Manage database migrations
 
@@ -295,11 +401,12 @@ Usage:
   genus migrate <subcommand> [arguments]
 
 Subcommands:
-  up        Apply all pending migrations
-  down      Revert the last applied migration
-  status    Show migration status
-  create    Create a new migration file
-  help      Show this help message
+  up          Apply all pending migrations
+  down        Revert the last applied migration
+  status      Show migration status
+  create      Create a new migration file
+  visualize   Visualize migration dependency graph (alias: viz)
+  help        Show this help message
 
 Environment Variables:
   DATABASE_URL    Database connection string (default: postgres://postgres:postgres@localhost:5432/genus_dev?sslmode=disable)
