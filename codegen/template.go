@@ -43,6 +43,8 @@ func fieldConstructor(fieldType string) string {
 		return "query.NewBoolField"
 	case "query.Float64Field":
 		return "query.NewFloat64Field"
+	case "query.TimeField":
+		return "query.NewTimeField"
 	case "query.OptionalStringField":
 		return "query.NewOptionalStringField"
 	case "query.OptionalIntField":
@@ -53,6 +55,8 @@ func fieldConstructor(fieldType string) string {
 		return "query.NewOptionalBoolField"
 	case "query.OptionalFloat64Field":
 		return "query.NewOptionalFloat64Field"
+	case "query.OptionalTimeField":
+		return "query.NewOptionalTimeField"
 	default:
 		return "query.NewStringField"
 	}

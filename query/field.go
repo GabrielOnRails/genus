@@ -1,5 +1,7 @@
 package query
 
+import "time"
+
 // Field é a interface base para todos os tipos de campos.
 // Cada campo conhece seu nome de coluna no banco de dados.
 type Field interface {
@@ -886,6 +888,267 @@ func (f OptionalFloat64Field) IsNull() Condition {
 }
 
 func (f OptionalFloat64Field) IsNotNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNotNull,
+	}
+}
+
+// utcTimes normaliza um slice de time.Time para UTC.
+func utcTimes(values []time.Time) []time.Time {
+	normalized := make([]time.Time, len(values))
+	for i, v := range values {
+		normalized[i] = v.UTC()
+	}
+	return normalized
+}
+
+// TimeField representa um campo time.Time com operadores temporais.
+//
+// Além dos operadores de comparação padrão (Gt, Lt, ...), expõe aliases
+// semânticos (After, Before, OnOrAfter, OnOrBefore) que deixam a intenção
+// explícita na query:
+//
+//	Where(UserFields.CreatedAt.After(inicioDoMes))
+//
+// Todos os valores são normalizados para UTC. Isso é necessário porque o driver
+// do SQLite serializa time.Time no timezone local e o SQLite compara datas como
+// texto: um valor em -03:00 comparado com uma coluna gravada em UTC produz
+// resultado errado silenciosamente. Normalizar preserva o mesmo instante e
+// mantém a comparação correta nos três dialetos.
+type TimeField struct {
+	column string
+}
+
+func NewTimeField(column string) TimeField {
+	return TimeField{column: column}
+}
+
+func (f TimeField) ColumnName() string {
+	return f.column
+}
+
+func (f TimeField) Eq(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpEq,
+		Value:    value.UTC(),
+	}
+}
+
+func (f TimeField) Ne(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNe,
+		Value:    value.UTC(),
+	}
+}
+
+func (f TimeField) Gt(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGt,
+		Value:    value.UTC(),
+	}
+}
+
+func (f TimeField) Gte(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGte,
+		Value:    value.UTC(),
+	}
+}
+
+func (f TimeField) Lt(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLt,
+		Value:    value.UTC(),
+	}
+}
+
+func (f TimeField) Lte(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLte,
+		Value:    value.UTC(),
+	}
+}
+
+// After é um alias de Gt: registros posteriores a value.
+func (f TimeField) After(value time.Time) Condition {
+	return f.Gt(value)
+}
+
+// Before é um alias de Lt: registros anteriores a value.
+func (f TimeField) Before(value time.Time) Condition {
+	return f.Lt(value)
+}
+
+// OnOrAfter é um alias de Gte: registros em value ou posteriores.
+func (f TimeField) OnOrAfter(value time.Time) Condition {
+	return f.Gte(value)
+}
+
+// OnOrBefore é um alias de Lte: registros em value ou anteriores.
+func (f TimeField) OnOrBefore(value time.Time) Condition {
+	return f.Lte(value)
+}
+
+func (f TimeField) In(values ...time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIn,
+		Value:    utcTimes(values),
+	}
+}
+
+func (f TimeField) NotIn(values ...time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotIn,
+		Value:    utcTimes(values),
+	}
+}
+
+// Between filtra registros no intervalo [start, end] (inclusivo nas duas pontas).
+func (f TimeField) Between(start, end time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpBetween,
+		Value:    []time.Time{start.UTC(), end.UTC()},
+	}
+}
+
+func (f TimeField) IsNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNull,
+	}
+}
+
+func (f TimeField) IsNotNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNotNull,
+	}
+}
+
+// OptionalTimeField representa um campo time.Time que pode ser NULL.
+type OptionalTimeField struct {
+	column string
+}
+
+func NewOptionalTimeField(column string) OptionalTimeField {
+	return OptionalTimeField{column: column}
+}
+
+func (f OptionalTimeField) ColumnName() string {
+	return f.column
+}
+
+func (f OptionalTimeField) Eq(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpEq,
+		Value:    value.UTC(),
+	}
+}
+
+func (f OptionalTimeField) Ne(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNe,
+		Value:    value.UTC(),
+	}
+}
+
+func (f OptionalTimeField) Gt(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGt,
+		Value:    value.UTC(),
+	}
+}
+
+func (f OptionalTimeField) Gte(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpGte,
+		Value:    value.UTC(),
+	}
+}
+
+func (f OptionalTimeField) Lt(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLt,
+		Value:    value.UTC(),
+	}
+}
+
+func (f OptionalTimeField) Lte(value time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpLte,
+		Value:    value.UTC(),
+	}
+}
+
+// After é um alias de Gt: registros posteriores a value.
+func (f OptionalTimeField) After(value time.Time) Condition {
+	return f.Gt(value)
+}
+
+// Before é um alias de Lt: registros anteriores a value.
+func (f OptionalTimeField) Before(value time.Time) Condition {
+	return f.Lt(value)
+}
+
+// OnOrAfter é um alias de Gte: registros em value ou posteriores.
+func (f OptionalTimeField) OnOrAfter(value time.Time) Condition {
+	return f.Gte(value)
+}
+
+// OnOrBefore é um alias de Lte: registros em value ou anteriores.
+func (f OptionalTimeField) OnOrBefore(value time.Time) Condition {
+	return f.Lte(value)
+}
+
+func (f OptionalTimeField) In(values ...time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIn,
+		Value:    utcTimes(values),
+	}
+}
+
+func (f OptionalTimeField) NotIn(values ...time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpNotIn,
+		Value:    utcTimes(values),
+	}
+}
+
+// Between filtra registros no intervalo [start, end] (inclusivo nas duas pontas).
+func (f OptionalTimeField) Between(start, end time.Time) Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpBetween,
+		Value:    []time.Time{start.UTC(), end.UTC()},
+	}
+}
+
+func (f OptionalTimeField) IsNull() Condition {
+	return Condition{
+		Field:    f.column,
+		Operator: OpIsNull,
+	}
+}
+
+func (f OptionalTimeField) IsNotNull() Condition {
 	return Condition{
 		Field:    f.column,
 		Operator: OpIsNotNull,

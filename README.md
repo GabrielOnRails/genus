@@ -120,6 +120,11 @@ user := &User{Name: "Alice", Email: "alice@example.com"}
 db.DB().Create(ctx, user)
 db.DB().Update(ctx, user)
 db.DB().Delete(ctx, user)
+
+// Bulk UPDATE / DELETE, also type-safe
+affected, err := genus.Table[User](db).
+    Where(UserFields.LastLogin.Before(cutoff)).
+    Update(ctx, UserFields.IsActive.Set(false))
 ```
 
 ---
@@ -184,6 +189,8 @@ go test -bench=. -benchmem ./benchmarks/
 ### Advanced
 - **Relationships** — HasMany, BelongsTo, ManyToMany
 - **Eager loading** — `Preload("Posts.Comments")`
+- **Bulk mutations** — Type-safe `UPDATE`/`DELETE` with `WHERE`
+- **Typed time filters** — `After`, `Before`, `Between` on `time.Time` columns
 - **Soft deletes** — Automatic `deleted_at` filtering
 - **Hooks** — BeforeCreate, AfterUpdate, etc.
 - **Migrations** — AutoMigrate + versioned migrations
@@ -232,6 +239,71 @@ users, _ := genus.UltraFastTable[User](db).
 | `Table[T]()` | Fast | Low | General purpose |
 | `FastTable[T]()` | Faster | Lower | Reduced GC pressure |
 | `UltraFastTable[T]()` | Raw SQL | Minimal | Hot paths |
+
+---
+
+## Bulk Updates and Deletes
+
+Mutations across many rows keep the same compile-time guarantees as reads. The
+`SET` clause is built from typed fields, so both the column name and the value
+type are checked by the compiler:
+
+```go
+// UPDATE users SET is_active = $1, updated_at = $2 WHERE last_login < $3
+affected, err := genus.Table[User](db).
+    Where(UserFields.LastLogin.Before(cutoff)).
+    Update(ctx, UserFields.IsActive.Set(false))
+
+// Soft delete when the model implements core.SoftDeletable, hard DELETE otherwise
+removed, err := genus.Table[Session](db).
+    Where(SessionFields.ExpiresAt.Before(time.Now())).
+    Delete(ctx)
+
+// Purge for good, including rows already soft-deleted
+purged, err := genus.Table[Session](db).
+    Where(SessionFields.ExpiresAt.Before(retentionLimit)).
+    ForceDelete(ctx)
+```
+
+`updated_at` is set automatically when the model has that column, and clearing a
+nullable column is explicit via `SetNull()`.
+
+**Mutations without a `WHERE` are refused.** A forgotten filter is a wiped table,
+so affecting every row has to be spelled out:
+
+```go
+_, err := genus.Table[User](db).Update(ctx, UserFields.IsActive.Set(false))
+// error: refusing to run UPDATE without a WHERE clause
+
+_, err := genus.Table[User](db).AllowGlobal().Update(ctx, UserFields.IsActive.Set(false))
+// runs
+```
+
+Zero rows affected is a valid result, not an error.
+
+---
+
+## Time Filters
+
+`time.Time` columns get a typed field with the comparison operators plus semantic
+aliases, so date filtering never falls back to raw strings:
+
+```go
+users, err := genus.Table[User](db).
+    Where(UserFields.CreatedAt.After(startOfMonth)).
+    Where(UserFields.CreatedAt.Before(time.Now())).
+    Find(ctx)
+
+// Also: OnOrAfter, OnOrBefore, Between, In, NotIn, IsNull, IsNotNull
+orders, err := genus.Table[Order](db).
+    Where(OrderFields.PlacedAt.Between(weekStart, weekEnd)).
+    Find(ctx)
+```
+
+Values are normalized to UTC when the condition is built. This matters because
+the SQLite driver serializes `time.Time` in the local timezone while SQLite
+compares dates as text, which silently returns wrong results for any timezone
+other than UTC. Normalization preserves the instant.
 
 ---
 

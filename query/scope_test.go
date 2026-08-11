@@ -17,12 +17,10 @@ func (u softDeleteUser) TableName() string {
 	return "users"
 }
 
-// softDeleteUserPtr uses pointer receiver for SoftDeletable
-// applySoftDeleteScope checks via `any(zero).(core.SoftDeletable)` with value type,
-// so SoftDeletable must be implemented on value receiver for this to work.
-// Since core.SoftDeleteModel uses pointer receivers, the zero-value check won't match.
-// This is the expected behavior - we test that it doesn't add conditions for
-// types whose SoftDeletable is only on pointer.
+// core.SoftDeleteModel implementa SoftDeletable com receivers de ponteiro, então
+// um model que o embute satisfaz a interface apenas via *T. Como embutir
+// core.SoftDeleteModel é a forma recomendada de habilitar soft delete, o scope
+// tem que ser aplicado também nesse caso.
 func TestApplySoftDeleteScope_PointerReceiverSoftDeletable(t *testing.T) {
 	b := NewBuilder[softDeleteUser](
 		&mockExecutor{},
@@ -33,11 +31,16 @@ func TestApplySoftDeleteScope_PointerReceiverSoftDeletable(t *testing.T) {
 
 	result := applySoftDeleteScope(b)
 
-	// Since SoftDeletable is implemented on *SoftDeleteModel (pointer receiver),
-	// and applySoftDeleteScope checks with zero value, it won't match.
-	// This tests the actual behavior of the code.
-	if len(result.conditions) != 0 {
-		t.Errorf("applySoftDeleteScope should not add condition for pointer-receiver SoftDeletable, got %d", len(result.conditions))
+	if len(result.conditions) != 1 {
+		t.Fatalf("applySoftDeleteScope should add condition for pointer-receiver SoftDeletable, got %d", len(result.conditions))
+	}
+
+	cond, ok := result.conditions[0].(Condition)
+	if !ok {
+		t.Fatalf("expected Condition, got %T", result.conditions[0])
+	}
+	if cond.Field != "deleted_at" || cond.Operator != OpIsNull {
+		t.Errorf("expected deleted_at IS NULL, got %s %s", cond.Field, cond.Operator)
 	}
 }
 

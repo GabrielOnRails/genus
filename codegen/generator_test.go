@@ -422,7 +422,10 @@ func TestGetQueryFieldType(t *testing.T) {
 		{"core.Optional[int64]", "query.OptionalInt64Field"},
 		{"core.Optional[bool]", "query.OptionalBoolField"},
 		{"core.Optional[float64]", "query.OptionalFloat64Field"},
-		{"time.Time", "query.StringField"},            // fallback
+		{"time.Time", "query.TimeField"},
+		{"*time.Time", "query.TimeField"},
+		{"Optional[time.Time]", "query.OptionalTimeField"},
+		{"core.Optional[time.Time]", "query.OptionalTimeField"},
 		{"CustomType", "query.StringField"},           // fallback
 		{"Optional[CustomType]", "query.StringField"}, // fallback para Optional com tipo desconhecido
 	}

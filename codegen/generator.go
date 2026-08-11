@@ -221,6 +221,8 @@ func (g *Generator) getQueryFieldType(goType string) string {
 		return "query.BoolField"
 	case "float64":
 		return "query.Float64Field"
+	case "time.Time":
+		return "query.TimeField"
 	}
 
 	// Mapeia tipos Optional
@@ -237,6 +239,8 @@ func (g *Generator) getQueryFieldType(goType string) string {
 			return "query.OptionalBoolField"
 		case "float64":
 			return "query.OptionalFloat64Field"
+		case "time.Time":
+			return "query.OptionalTimeField"
 		}
 	}
 

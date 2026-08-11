@@ -25,6 +25,7 @@ type Builder[T any] struct {
 	disableScopes bool // Se true, não aplica scopes automáticos (como soft delete)
 	joins         []JoinClause
 	preloads      []string // Relacionamentos para eager loading
+	allowGlobal   bool     // Se true, permite UPDATE/DELETE sem WHERE
 }
 
 // OrderBy representa uma cláusula ORDER BY.
@@ -52,6 +53,7 @@ func (b *Builder[T]) clone() *Builder[T] {
 		logger:        b.logger,
 		tableName:     b.tableName,
 		disableScopes: b.disableScopes,
+		allowGlobal:   b.allowGlobal,
 	}
 
 	// Copiar conditions
@@ -409,15 +411,22 @@ func (b *Builder[T]) buildCountQuery() (string, []interface{}) {
 	return sb.String(), args
 }
 
-// buildWhereClause constrói a cláusula WHERE.
+// buildWhereClause constrói a cláusula WHERE numerando placeholders a partir de 1.
 func (b *Builder[T]) buildWhereClause(conditions []interface{}) (string, []interface{}) {
+	return b.buildWhereClauseFrom(conditions, 1)
+}
+
+// buildWhereClauseFrom constrói a cláusula WHERE numerando placeholders a partir
+// de startIndex. Necessário em UPDATE, onde os placeholders do SET vêm antes
+// dos do WHERE em dialetos posicionais como o do PostgreSQL.
+func (b *Builder[T]) buildWhereClauseFrom(conditions []interface{}, startIndex int) (string, []interface{}) {
 	if len(conditions) == 0 {
 		return "", nil
 	}
 
 	var parts []string
 	var args []interface{}
-	argIndex := 1
+	argIndex := startIndex
 
 	for _, cond := range conditions {
 		switch c := cond.(type) {
@@ -541,6 +550,18 @@ func interfaceSlice(value interface{}) []interface{} {
 		}
 		return result
 	case []bool:
+		result := make([]interface{}, len(v))
+		for i, val := range v {
+			result[i] = val
+		}
+		return result
+	case []float64:
+		result := make([]interface{}, len(v))
+		for i, val := range v {
+			result[i] = val
+		}
+		return result
+	case []time.Time:
 		result := make([]interface{}, len(v))
 		for i, val := range v {
 			result[i] = val

@@ -20,7 +20,8 @@ cat > "$HOOKS_DIR/commit-msg" << 'EOF'
 commit_msg_file=$1
 commit_msg=$(cat "$commit_msg_file")
 
-# Check for disallowed patterns in commit messages
+# Check for disallowed patterns in commit messages:
+# generated-by markers and any co-authorship trailer.
 if echo "$commit_msg" | grep -iE "(🤖|Generated with|Co-Authored-By:)" > /dev/null; then
     echo "Error: Commit message contains disallowed patterns."
     echo "Please ensure your commit message follows project standards."

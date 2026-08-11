@@ -5,6 +5,94 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### 1. TimeField: filtro temporal type-safe
+
+**Motivação:** `time.Time` era o único tipo comum sem field tipado. Filtrar por data
+exigia cair em string crua (`OrderByDesc("created_at")`), perdendo exatamente a
+garantia de compilação que o Genus promete. Pior: o codegen mapeava `time.Time`
+para `StringField` por fallback, então `CreatedAt.Eq("2026-01-01")` compilava e a
+comparação virava lexicográfica.
+
+**Funcionalidades:**
+
+- `TimeField` e `OptionalTimeField` com `Eq`, `Ne`, `Gt`, `Gte`, `Lt`, `Lte`, `In`, `NotIn`, `Between`, `IsNull`, `IsNotNull`
+- Aliases semânticos: `After`, `Before`, `OnOrAfter`, `OnOrBefore`
+- Codegen passa a mapear `time.Time`, `*time.Time` e `Optional[time.Time]` para os fields corretos
+- Valores normalizados para UTC (ver seção Fixed)
+
+**Exemplo:**
+
+```go
+usuarios, err := genus.Table[User](db).
+    Where(UserFields.CreatedAt.After(inicioDoMes)).
+    Where(UserFields.DeletedAt.IsNull()).
+    Find(ctx)
+```
+
+**Arquivos:**
+- `query/field.go` - TimeField e OptionalTimeField
+- `codegen/generator.go`, `codegen/template.go` - mapeamento de tipos
+
+#### 2. UPDATE e DELETE em massa no query builder
+
+**Motivação:** só era possível atualizar ou remover um model já carregado
+(`core.DB.Update`). Um `UPDATE ... WHERE` exigia SQL cru, o que inviabilizava
+operações básicas de manutenção.
+
+**Funcionalidades:**
+
+- `Builder[T].Update(ctx, assignments...)` retornando linhas afetadas
+- `Builder[T].Delete(ctx)` com soft delete automático quando o model implementa `core.SoftDeletable`
+- `Builder[T].ForceDelete(ctx)` para remoção definitiva, inclusive de registros já soft-deleted
+- `Assignment` type-safe via `Set()` em todos os fields, e `SetNull()` nos `Optional*`
+- `updated_at` atualizado automaticamente quando o model tem a coluna
+- Guarda contra mutação sem `WHERE`: `Update`/`Delete` recusam rodar sem filtro, liberado explicitamente por `AllowGlobal()`
+- Zero linhas afetadas não é erro
+
+**Exemplo:**
+
+```go
+// Desativa quem não loga desde o corte
+afetados, err := genus.Table[User](db).
+    Where(UserFields.LastLogin.Before(corte)).
+    Update(ctx, UserFields.IsActive.Set(false))
+
+// Remove sessões expiradas
+removidas, err := genus.Table[Session](db).
+    Where(SessionFields.ExpiresAt.Before(time.Now())).
+    Delete(ctx)
+```
+
+**Arquivos:**
+- `query/mutation.go` - Update, Delete, ForceDelete, AllowGlobal
+- `query/assignment.go` - Assignment e os métodos Set/SetNull
+
+### Fixed
+
+- **Soft delete não era aplicado nos models que embutem `core.SoftDeleteModel`.**
+  `applySoftDeleteScope` verificava a interface apenas no valor, mas
+  `core.SoftDeleteModel` implementa `core.SoftDeletable` com receivers de ponteiro.
+  Na prática, a forma recomendada de habilitar soft delete não filtrava
+  `deleted_at IS NULL` em nenhuma query. Passa a verificar valor e ponteiro.
+  **Impacto:** queries sobre models soft-deletable deixam de retornar registros
+  removidos. Use `WithTrashed()` para o comportamento anterior.
+
+- **`Float64Field.In` e `Float64Field.Between` geravam SQL inválido.**
+  `interfaceSlice` não tratava `[]float64`, então o slice inteiro ia como um
+  único argumento: `IN ($1)` em vez de `IN ($1, $2, $3)`, e `BETWEEN` era
+  descartado silenciosamente. Adicionado suporte a `[]float64` e `[]time.Time`.
+
+- **Valores `time.Time` são normalizados para UTC ao montar condições e atribuições.**
+  O driver do SQLite serializa `time.Time` no fuso local e o SQLite compara datas
+  como texto, então uma comparação feita em -03:00 contra uma coluna gravada em UTC
+  retornava resultado errado sem erro. A normalização preserva o instante.
+
+---
+
 ## [7.0.0] - 2026-03-04
 
 ### Added - Version 7.0 (Cloud Native & Developer Experience)
