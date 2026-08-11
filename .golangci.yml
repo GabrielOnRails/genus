@@ -1,3 +1,10 @@
+# Migrado para o formato v2 do golangci-lint.
+# O objetivo aqui e reproduzir o mesmo nivel de exigencia da configuracao v1:
+# a v2 passou a rodar checks novos (QF* no staticcheck, analyzer inline no govet)
+# e deixou de aplicar as exclusoes padrao automaticamente. Adotar esses checks
+# novos e uma decisao separada, nao efeito colateral da migracao.
+version: "2"
+
 run:
   timeout: 5m
 
@@ -8,27 +15,46 @@ linters:
     - staticcheck
     - unused
     - ineffassign
-    - gosimple
-    - typecheck
 
-linters-settings:
-  errcheck:
-    exclude-functions:
-      - fmt.Fprintf
-      - fmt.Fprintln
-      - fmt.Fprint
-      - (io.Closer).Close
-      - (*database/sql.Tx).Rollback
-      - (encoding/json.Encoder).Encode
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Fprint
+        - (io.Closer).Close
+        - (*database/sql.Tx).Rollback
+        - (encoding/json.Encoder).Encode
 
-issues:
-  exclude-dirs:
-    - examples
-    - playground
-    - benchmarks
-    - cmd
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - unused
+    govet:
+      disable:
+        # Novo na v2, sugere inline de constantes como reflect.Ptr.
+        - inline
+
+    staticcheck:
+      # v1 rodava staticcheck (SA*) e gosimple (S1*). A v2 unificou os dois e
+      # incluiu QF* e ST* por padrao.
+      checks:
+        - "SA*"
+        - "S1*"
+
+  exclusions:
+    # Equivale ao issues.exclude-use-default da v1, que cobria entre outros os
+    # retornos de erro de Close, Flush e print nao verificados.
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+      - legacy
+
+    paths:
+      - examples
+      - playground
+      - benchmarks
+      - cmd
+
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - unused
